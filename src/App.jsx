@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { Environment } from "@react-three/drei";
 import Model from "./model.jsx";
 
 export default function App() {
@@ -46,7 +46,6 @@ export default function App() {
           <spotLight position={[-10, -10, -10]} angle={0.3} penumbra={1} intensity={1} castShadow />
           <Model currentSection={currentSection} sectionProgress={sectionProgress} position={[0, 0, 0]} />
           <Environment preset="sunset" />
-          <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 1.5} />
         </Canvas>
       </div>
 

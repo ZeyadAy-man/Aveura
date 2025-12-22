@@ -183,7 +183,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
 
   return (
     <group ref={gRef} {...props} dispose={null}>
-      <MeshComponent geometry={n.RingBody.geometry} material={sharedMaterials.mtMat} />
       
       <TransmissionMesh 
         geometry={n.MainDiamond.geometry} 
@@ -195,14 +194,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
       <MeshComponent geometry={n.Crown5.geometry} position={[0,1.151,0]} scale={0.376} material={sharedMaterials.mtMat} />
       
       <TransmissionMesh 
-        geometry={n.Side6Diamonds.geometry} 
-        position={[-0.812,0.645,-0.003]} 
-        rotation={[0.068,-0.202,0.446]} 
-        scale={[0.037,0.041,0.037]}
-        transmissionProps={transmissionProps.sd1}
-      />
-      
-      <TransmissionMesh 
         geometry={n.Side5Diamonds.geometry} 
         position={[0.794,0.659,0]} 
         rotation={[2.887,0.273,-2.126]} 
@@ -211,17 +202,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
       />
       
       <MeshComponent geometry={n.Pearls.geometry} position={[-0.611,0.749,0.085]} rotation={[3.14,0,3.14]} scale={0.025} material={sharedMaterials.plMat} />
-      
-      <TransmissionMesh 
-        geometry={n.Side4Diamonds.geometry} 
-        position={[0.071,1.139,0.401]} 
-        scale={[0.03,0.034,0.03]}
-        transmissionProps={transmissionProps.sd}
-      />
-      
-      <MeshComponent geometry={n.Crown4.geometry} position={[0.071,1.14,0.401]} scale={0.032} material={sharedMaterials.mtMat} />
-      <MeshComponent geometry={n.Crown3.geometry} position={[0,1.14,-0.407]} rotation={[3.14,0,3.14]} scale={0.037} material={sharedMaterials.mtMat} />
-      
+            
       <TransmissionMesh 
         geometry={n.Side3Diamonds.geometry} 
         position={[0.07,1.139,-0.4]} 
@@ -230,25 +211,8 @@ function Model({ currentSection, sectionProgress, ...props }) {
         transmissionProps={transmissionProps.sd}
       />
       
-      <MeshComponent geometry={n.Crown2.geometry} position={[-0.397,1.156,-0.007]} rotation={[0,-1.571,0]} scale={0.028} material={sharedMaterials.mtMat} />
-      
-      <TransmissionMesh 
-        geometry={n.Side2Diamonds.geometry} 
-        position={[-0.372,1.156,-0.099]} 
-        rotation={[0,-1.571,0]} 
-        scale={[0.02,0.022,0.02]}
-        transmissionProps={transmissionProps.sd}
-      />
-      
       <MeshComponent geometry={n.Crown1.geometry} position={[0.391,1.156,-0.01]} rotation={[0,1.57,0]} scale={0.028} material={sharedMaterials.mtMat} />
       
-      <TransmissionMesh 
-        geometry={n.Side1Diamonds.geometry} 
-        position={[0.372,1.156,-0.1]} 
-        rotation={[0,1.57,0]} 
-        scale={[0.02,0.022,0.02]}
-        transmissionProps={transmissionProps.sd}
-      />
     </group>
   );
 }

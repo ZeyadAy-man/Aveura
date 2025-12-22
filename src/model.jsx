@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
 export default function Model({ currentSection, sectionProgress, ...props }) {
@@ -173,43 +173,43 @@ export default function Model({ currentSection, sectionProgress, ...props }) {
       <mesh castShadow receiveShadow geometry={nodes.RingBody.geometry}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.MainDiamond.geometry} position={[0, 1.146, 0]} scale={[0.356, 0.394, 0.356]}>
+      <mesh geometry={nodes.MainDiamond.geometry} position={[0, 1.146, 0]} scale={[0.356, 0.394, 0.356]}>
         <MeshTransmissionMaterial {...mainDiamondMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Crown5.geometry} position={[0, 1.151, 0]} scale={0.376}>
+      <mesh geometry={nodes.Crown5.geometry} position={[0, 1.151, 0]} scale={0.376}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side6Diamonds.geometry} position={[-0.812, 0.645, -0.003]} rotation={[0.068, -0.202, 0.446]} scale={[0.037, 0.041, 0.037]}>
+      <mesh geometry={nodes.Side6Diamonds.geometry} position={[-0.812, 0.645, -0.003]} rotation={[0.068, -0.202, 0.446]} scale={[0.037, 0.041, 0.037]}>
         <MeshTransmissionMaterial {...sideDiamond1Material} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side5Diamonds.geometry} position={[0.794, 0.659, 0]} rotation={[2.887, 0.273, -2.126]} scale={[0.037, 0.041, 0.037]}>
+      <mesh geometry={nodes.Side5Diamonds.geometry} position={[0.794, 0.659, 0]} rotation={[2.887, 0.273, -2.126]} scale={[0.037, 0.041, 0.037]}>
         <MeshTransmissionMaterial {...sideDiamond1Material} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Pearls.geometry} position={[-0.611, 0.749, 0.085]} rotation={[Math.PI, 0, Math.PI]} scale={0.025}>
+      <mesh geometry={nodes.Pearls.geometry} position={[-0.611, 0.749, 0.085]} rotation={[Math.PI, 0, Math.PI]} scale={0.025}>
         <meshStandardMaterial color="#FFF5E1" roughness={0.3} metalness={0.1} envMapIntensity={0.8} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side4Diamonds.geometry} position={[0.071, 1.139, 0.401]} scale={[0.03, 0.034, 0.03]}>
+      <mesh geometry={nodes.Side4Diamonds.geometry} position={[0.071, 1.139, 0.401]} scale={[0.03, 0.034, 0.03]}>
         <MeshTransmissionMaterial {...sideDiamondMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Crown4.geometry} position={[0.071, 1.14, 0.401]} scale={0.032}>
+      <mesh geometry={nodes.Crown4.geometry} position={[0.071, 1.14, 0.401]} scale={0.032}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Crown3.geometry} position={[0, 1.14, -0.407]} rotation={[Math.PI, 0, Math.PI]} scale={0.037}>
+      <mesh geometry={nodes.Crown3.geometry} position={[0, 1.14, -0.407]} rotation={[Math.PI, 0, Math.PI]} scale={0.037}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side3Diamonds.geometry} position={[0.07, 1.139, -0.4]} rotation={[Math.PI, 0, Math.PI]} scale={[0.03, 0.034, 0.03]}>
+      <mesh geometry={nodes.Side3Diamonds.geometry} position={[0.07, 1.139, -0.4]} rotation={[Math.PI, 0, Math.PI]} scale={[0.03, 0.034, 0.03]}>
         <MeshTransmissionMaterial {...sideDiamondMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Crown2.geometry} position={[-0.397, 1.156, -0.007]} rotation={[0, -1.571, 0]} scale={0.028}>
+      <mesh geometry={nodes.Crown2.geometry} position={[-0.397, 1.156, -0.007]} rotation={[0, -1.571, 0]} scale={0.028}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side2Diamonds.geometry} position={[-0.372, 1.156, -0.099]} rotation={[0, -1.571, 0]} scale={[0.02, 0.022, 0.02]}>
+      <mesh geometry={nodes.Side2Diamonds.geometry} position={[-0.372, 1.156, -0.099]} rotation={[0, -1.571, 0]} scale={[0.02, 0.022, 0.02]}>
         <MeshTransmissionMaterial {...sideDiamondMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Crown1.geometry} position={[0.391, 1.156, -0.01]} rotation={[0, Math.PI / 2, 0]} scale={0.028}>
+      <mesh geometry={nodes.Crown1.geometry} position={[0.391, 1.156, -0.01]} rotation={[0, Math.PI / 2, 0]} scale={0.028}>
         <meshStandardMaterial {...metalMaterial} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Side1Diamonds.geometry} position={[0.372, 1.156, -0.1]} rotation={[0, Math.PI / 2, 0]} scale={[0.02, 0.022, 0.02]}>
+      <mesh geometry={nodes.Side1Diamonds.geometry} position={[0.372, 1.156, -0.1]} rotation={[0, Math.PI / 2, 0]} scale={[0.02, 0.022, 0.02]}>
         <MeshTransmissionMaterial {...sideDiamondMaterial} />
       </mesh>
     </group>

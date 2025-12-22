@@ -26,7 +26,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      scaleRef.current = w < 640 ? { s: 0.6, p: 0.5 } : w < 1024 ? { s: 0.8, p: 0.7 } : { s: 1, p: 1 };
+      scaleRef.current = w < 640 ? { s: 0.3, p: 0.3 } : w < 1024 ? { s: 0.8, p: 0.7 } : { s: 1, p: 1 };
     };
     update();
     window.addEventListener('resize', update);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
-import Model from "./Model.jsx";
+import Model from "./model.jsx";
 
 export default function App() {
   const [currentSection, setCurrentSection] = useState(0);

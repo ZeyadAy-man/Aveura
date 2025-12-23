@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, memo } from "react";
+import { useEffect, useRef, useMemo, memo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -19,30 +19,31 @@ const TransmissionMesh = memo(({ geometry, transmissionProps, ...props }) => (
 function Model({ currentSection, sectionProgress, ...props }) {
   const gRef = useRef();
   const { nodes } = useGLTF("/ring.glb");
-  const scaleRef = useRef({ s: 1, p: 1 });
+  const [scale, setScale] = useState({ s: 1, p: 1 });
   const tgt = useRef({ pos: new THREE.Vector3(), rot: new THREE.Euler(), scale: 1 });
   const prevSection = useRef(currentSection);
 
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      scaleRef.current = w < 640 ? { s: 0.3, p: 0.3 } : w < 1024 ? { s: 0.8, p: 0.7 } : { s: 1, p: 1 };
+      const newScale = w < 640 ? { s: 0.5, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
+      setScale(newScale);
     };
     update();
-    window.addEventListener('resize', update);
+    window.addEventListener('resize', update, { passive: true });
     return () => window.removeEventListener('resize', update);
   }, []);
 
   const kf = useMemo(() => {
-    const { s, p } = scaleRef.current;
+    const { s, p } = scale;
     return [
-      [[0,0,0],[0,0,0],2*s],[[0,0.8,0],[1.57,0,0],3.2*s],
+      [[0,0,0],[0,0,0],2*s],[[0,0.8*s,0],[1.57,0,0],3.2*s],
       [[-p,0,0],[1.26,0,0.63],3.2*s],[[-3*p,0,0],[0,-1.31,-0.63],2.6*s],
       [[1.5*p,0,0],[1.26,3.14,0.63],3.2*s],[[3*p,0,0],[0,-1.75,-0.63],2.6*s],
-      [[0,1.8,0],[0.52,0.79,0],4.5*s],[[-2*p,-0.5,0],[1.05,-1.05,0.52],3.8*s],
-      [[0,0,0],[0.79,4.71,0],2.8*s],[[0,-0.2,0],[0.39,1.05,-0.26],2.5*s]
+      [[0,1.8*s,0],[0.52,0.79,0],4.5*s],[[-2*p,-0.5*s,0],[1.05,-1.05,0.52],3.8*s],
+      [[0,0,0],[0.79,4.71,0],2.8*s],[[0,-0.2*s,0],[0.39,1.05,-0.26],2.5*s]
     ];
-  }, []);
+  }, [scale]);
 
   useFrame(() => {
     const g = gRef.current;
@@ -73,7 +74,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
 
     prevSection.current = currentSection;
 
-    // Smooth interpolation
+    // Smooth interpolation - optimized
     const lerpFactor = 0.05;
     g.position.x += (t.pos.x - g.position.x) * lerpFactor;
     g.position.y += (t.pos.y - g.position.y) * lerpFactor;
@@ -121,61 +122,67 @@ function Model({ currentSection, sectionProgress, ...props }) {
     };
   }, [sharedMaterials]);
 
-  // Aggressive transmission optimization
+  // Ultra-aggressive transmission optimization
   const transmissionProps = useMemo(() => ({
     md: {
       transmission: 1,
-      thickness: 0.4,
+      thickness: 0.35,
       roughness: 0,
       metalness: 0,
-      ior: 2.42,
-      chromaticAberration: 0.03,
-      envMapIntensity: 2.5,
-      clearcoat: 1,
-      clearcoatRoughness: 0,
-      attenuationDistance: 0.15,
+      ior: 2.3,
+      chromaticAberration: 0.02,
+      envMapIntensity: 2.2,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.05,
+      attenuationDistance: 0.12,
       attenuationColor: col.w,
       color: col.w,
-      samples: 3, // Further reduced
-      resolution: 512,
-      anisotropicBlur: 0.12,
-      temporalDistortion: 0 // Disable expensive temporal effects
+      samples: 2,
+      resolution: 256,
+      anisotropicBlur: 0.15,
+      temporalDistortion: 0,
+      distortion: 0,
+      distortionScale: 0
     },
     sd: {
-      transmission: 0.7,
-      thickness: 0.2, // Reduced thickness
-      roughness: 0.05, // Slight roughness to hide artifacts
+      transmission: 0.65,
+      thickness: 0.15,
+      roughness: 0.08,
       metalness: 0,
-      ior: 2.2, // Lower IOR for performance
-      chromaticAberration: 0.02,
-      envMapIntensity: 2.5,
-      clearcoat: 0.8, // Reduced clearcoat
-      clearcoatRoughness: 0.1,
-      attenuationDistance: 0.1,
+      ior: 2.0,
+      chromaticAberration: 0.01,
+      envMapIntensity: 2.0,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.15,
+      attenuationDistance: 0.08,
       attenuationColor: col.b,
       color: col.g,
-      samples: 2, // Minimal samples for tiny diamonds
-      resolution: 128, // Very low res
-      anisotropicBlur: 0.2,
-      temporalDistortion: 0
+      samples: 1,
+      resolution: 64,
+      anisotropicBlur: 0.25,
+      temporalDistortion: 0,
+      distortion: 0,
+      distortionScale: 0
     },
     sd1: {
-      transmission: 0.7,
-      thickness: 0.2,
-      roughness: 0.05,
+      transmission: 0.65,
+      thickness: 0.15,
+      roughness: 0.08,
       metalness: 0,
-      ior: 2.2,
-      chromaticAberration: 0.02,
-      envMapIntensity: 2.5,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.1,
-      attenuationDistance: 0.1,
+      ior: 2.0,
+      chromaticAberration: 0.01,
+      envMapIntensity: 2.0,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.15,
+      attenuationDistance: 0.08,
       attenuationColor: col.b,
       color: col.p,
-      samples: 2,
-      resolution: 128,
-      anisotropicBlur: 0.2,
-      temporalDistortion: 0
+      samples: 1,
+      resolution: 64,
+      anisotropicBlur: 0.25,
+      temporalDistortion: 0,
+      distortion: 0,
+      distortionScale: 0
     }
   }), [col]);
 
@@ -183,15 +190,23 @@ function Model({ currentSection, sectionProgress, ...props }) {
 
   return (
     <group ref={gRef} {...props} dispose={null}>
-      
       <TransmissionMesh 
         geometry={n.MainDiamond.geometry} 
         position={[0,1.146,0]} 
         scale={[0.356,0.394,0.356]}
         transmissionProps={transmissionProps.md}
+        castShadow={false}
+        receiveShadow={false}
       />
       
-      <MeshComponent geometry={n.Crown5.geometry} position={[0,1.151,0]} scale={0.376} material={sharedMaterials.mtMat} />
+      <MeshComponent 
+        geometry={n.Crown5.geometry} 
+        position={[0,1.151,0]} 
+        scale={0.376} 
+        material={sharedMaterials.mtMat}
+        castShadow={false}
+        receiveShadow={false}
+      />
       
       <TransmissionMesh 
         geometry={n.Side5Diamonds.geometry} 
@@ -199,9 +214,19 @@ function Model({ currentSection, sectionProgress, ...props }) {
         rotation={[2.887,0.273,-2.126]} 
         scale={[0.037,0.041,0.037]}
         transmissionProps={transmissionProps.sd1}
+        castShadow={false}
+        receiveShadow={false}
       />
       
-      <MeshComponent geometry={n.Pearls.geometry} position={[-0.611,0.749,0.085]} rotation={[3.14,0,3.14]} scale={0.025} material={sharedMaterials.plMat} />
+      <MeshComponent 
+        geometry={n.Pearls.geometry} 
+        position={[-0.611,0.749,0.085]} 
+        rotation={[3.14,0,3.14]} 
+        scale={0.025} 
+        material={sharedMaterials.plMat}
+        castShadow={false}
+        receiveShadow={false}
+      />
             
       <TransmissionMesh 
         geometry={n.Side3Diamonds.geometry} 
@@ -209,10 +234,19 @@ function Model({ currentSection, sectionProgress, ...props }) {
         rotation={[3.14,0,3.14]} 
         scale={[0.03,0.034,0.03]}
         transmissionProps={transmissionProps.sd}
+        castShadow={false}
+        receiveShadow={false}
       />
       
-      <MeshComponent geometry={n.Crown1.geometry} position={[0.391,1.156,-0.01]} rotation={[0,1.57,0]} scale={0.028} material={sharedMaterials.mtMat} />
-      
+      <MeshComponent 
+        geometry={n.Crown1.geometry} 
+        position={[0.391,1.156,-0.01]} 
+        rotation={[0,1.57,0]} 
+        scale={0.028} 
+        material={sharedMaterials.mtMat}
+        castShadow={false}
+        receiveShadow={false}
+      />
     </group>
   );
 }

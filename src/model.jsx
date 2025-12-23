@@ -155,39 +155,83 @@ function Model({ currentSection, sectionProgress, ...props }) {
       envMapIntensity: 0.8
     });
 
-    return { mtMat, plMat };
-  }, [col]);
+    // Diamond-like material for low-end devices (fallback)
+    const diamondMatSimple = new THREE.MeshPhysicalMaterial({
+      color: col.w,
+      metalness: 0.1,
+      roughness: 0,
+      transmission: 0.95,
+      thickness: 0.5,
+      ior: 2.4,
+      reflectivity: 0.9,
+      clearcoat: 1,
+      clearcoatRoughness: 0,
+      transparent: true,
+      envMapIntensity: 2
+    });
+
+    const tintedGlassGreen = new THREE.MeshPhysicalMaterial({
+      color: col.g,
+      metalness: 0.05,
+      roughness: 0.05,
+      transmission: 0.8,
+      thickness: 0.3,
+      ior: 2,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.1,
+      transparent: true,
+      envMapIntensity: 1.5
+    });
+
+    const tintedGlassPurple = new THREE.MeshPhysicalMaterial({
+      color: col.p,
+      metalness: 0.05,
+      roughness: 0.05,
+      transmission: 0.8,
+      thickness: 0.3,
+      ior: 2,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.1,
+      transparent: true,
+      envMapIntensity: 1.5
+    });
+
+    return { mtMat, plMat, diamondMatSimple, tintedGlassGreen, tintedGlassPurple };
+  }, [col, gpuTier]);
 
   useEffect(() => {
     return () => {
       sharedMaterials.mtMat.dispose();
       sharedMaterials.plMat.dispose();
+      if (sharedMaterials.diamondMatSimple) sharedMaterials.diamondMatSimple.dispose();
+      if (sharedMaterials.tintedGlassGreen) sharedMaterials.tintedGlassGreen.dispose();
+      if (sharedMaterials.tintedGlassPurple) sharedMaterials.tintedGlassPurple.dispose();
     };
   }, [sharedMaterials]);
 
-  // Adaptive quality based on GPU tier - Reduced for better performance
+  // Adaptive quality based on GPU tier - Heavily optimized
   const transmissionProps = useMemo(() => {
     const qualitySettings = {
       high: {
-        mainSamples: 6,
-        mainResolution: 1024,
-        smallSamples: 4,
-        smallResolution: 256,
-        blur: 0.08
+        mainSamples: 4,
+        mainResolution: 512,
+        smallSamples: 2,
+        smallResolution: 128,
+        blur: 0.15
       },
       medium: {
-        mainSamples: 2,
-        mainResolution: 256,
+        mainSamples: 3,
+        mainResolution: 384,
         smallSamples: 1,
         smallResolution: 64,
         blur: 0.25
       },
       low: {
-        mainSamples: 2,
+        mainSamples: 1,
         mainResolution: 128,
         smallSamples: 1,
-        smallResolution: 32,
-        blur: 0.35
+        smallResolution: 64,
+        blur: 0.4
       }
     };
 
@@ -196,15 +240,15 @@ function Model({ currentSection, sectionProgress, ...props }) {
     return {
       md: {
         transmission: 1,
-        thickness: 0.4,
-        roughness: gpuTier === 'low' ? 0.05 : 0,
+        thickness: 0.3,
+        roughness: gpuTier === 'low' ? 0.1 : 0.05,
         metalness: 0,
-        ior: 2.42,
-        chromaticAberration: gpuTier === 'high' ? 0.03 : gpuTier === 'medium' ? 0.02 : 0.01,
-        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
-        clearcoat: gpuTier === 'low' ? 0.5 : 1,
-        clearcoatRoughness: gpuTier === 'low' ? 0.1 : 0,
-        attenuationDistance: 0.15,
+        ior: 2.2,
+        chromaticAberration: gpuTier === 'high' ? 0.02 : 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1.2 : 2,
+        clearcoat: gpuTier === 'low' ? 0 : gpuTier === 'medium' ? 0.5 : 0.8,
+        clearcoatRoughness: 0.2,
+        attenuationDistance: 0.2,
         attenuationColor: col.w,
         color: col.w,
         samples: settings.mainSamples,
@@ -213,68 +257,82 @@ function Model({ currentSection, sectionProgress, ...props }) {
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
-        backside: gpuTier === 'high',
-        backsideThickness: gpuTier === 'high' ? 0.1 : 0.05
+        backside: false,
+        backsideThickness: 0
       },
       sd: {
-        transmission: 0.7,
-        thickness: 0.2,
-        roughness: gpuTier === 'low' ? 0.15 : 0.05,
+        transmission: 0.6,
+        thickness: 0.15,
+        roughness: 0.15,
         metalness: 0,
-        ior: 2.2,
-        chromaticAberration: gpuTier === 'high' ? 0.02 : 0.01,
-        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
-        clearcoat: gpuTier === 'low' ? 0.3 : gpuTier === 'medium' ? 0.5 : 0.8,
-        clearcoatRoughness: 0.1,
-        attenuationDistance: 0.1,
+        ior: 2,
+        chromaticAberration: 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1 : 1.5,
+        clearcoat: 0,
+        clearcoatRoughness: 0.2,
+        attenuationDistance: 0.15,
         attenuationColor: col.b,
         color: col.g,
         samples: settings.smallSamples,
         resolution: settings.smallResolution,
-        anisotropicBlur: settings.blur * 1.5,
+        anisotropicBlur: settings.blur * 2,
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
         backside: false,
-        backsideThickness: 0.05
+        backsideThickness: 0
       },
       sd1: {
-        transmission: 0.7,
-        thickness: 0.2,
-        roughness: gpuTier === 'low' ? 0.15 : 0.05,
+        transmission: 0.6,
+        thickness: 0.15,
+        roughness: 0.15,
         metalness: 0,
-        ior: 2.2,
-        chromaticAberration: gpuTier === 'high' ? 0.02 : 0.01,
-        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
-        clearcoat: gpuTier === 'low' ? 0.3 : gpuTier === 'medium' ? 0.5 : 0.8,
-        clearcoatRoughness: 0.1,
-        attenuationDistance: 0.1,
+        ior: 2,
+        chromaticAberration: 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1 : 1.5,
+        clearcoat: 0,
+        clearcoatRoughness: 0.2,
+        attenuationDistance: 0.15,
         attenuationColor: col.b,
         color: col.p,
         samples: settings.smallSamples,
         resolution: settings.smallResolution,
-        anisotropicBlur: settings.blur * 1.5,
+        anisotropicBlur: settings.blur * 2,
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
         backside: false,
-        backsideThickness: 0.05
+        backsideThickness: 0
       }
     };
   }, [col, gpuTier]);
 
   const n = nodes;
+  const useFallbackForSmallDiamonds = gpuTier === 'low' || gpuTier === 'medium';
+  const useFallbackForMainDiamond = gpuTier === 'low';
 
   return (
     <group ref={gRef} {...props} dispose={null}>
-      <TransmissionMesh 
-        geometry={n.MainDiamond.geometry} 
-        position={[0,1.146,0]} 
-        scale={[0.356,0.394,0.356]}
-        transmissionProps={transmissionProps.md}
-        castShadow={false}
-        receiveShadow={false}
-      />
+      {/* Main Diamond - Keep transmission for high/medium, simple for low only */}
+      {useFallbackForMainDiamond ? (
+        <MeshComponent 
+          geometry={n.MainDiamond.geometry} 
+          position={[0,1.146,0]} 
+          scale={[0.356,0.394,0.356]}
+          material={sharedMaterials.diamondMatSimple}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      ) : (
+        <TransmissionMesh 
+          geometry={n.MainDiamond.geometry} 
+          position={[0,1.146,0]} 
+          scale={[0.356,0.394,0.356]}
+          transmissionProps={transmissionProps.md}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      )}
       
       <MeshComponent 
         geometry={n.Crown5.geometry} 
@@ -285,15 +343,28 @@ function Model({ currentSection, sectionProgress, ...props }) {
         receiveShadow={false}
       />
       
-      <TransmissionMesh 
-        geometry={n.Side5Diamonds.geometry} 
-        position={[0.794,0.659,0]} 
-        rotation={[2.887,0.273,-2.126]} 
-        scale={[0.037,0.041,0.037]}
-        transmissionProps={transmissionProps.sd1}
-        castShadow={false}
-        receiveShadow={false}
-      />
+      {/* Small diamonds - Use simple materials for low/medium */}
+      {useFallbackForSmallDiamonds ? (
+        <MeshComponent 
+          geometry={n.Side5Diamonds.geometry} 
+          position={[0.794,0.659,0]} 
+          rotation={[2.887,0.273,-2.126]} 
+          scale={[0.037,0.041,0.037]}
+          material={sharedMaterials.tintedGlassPurple}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      ) : (
+        <TransmissionMesh 
+          geometry={n.Side5Diamonds.geometry} 
+          position={[0.794,0.659,0]} 
+          rotation={[2.887,0.273,-2.126]} 
+          scale={[0.037,0.041,0.037]}
+          transmissionProps={transmissionProps.sd1}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      )}
       
       <MeshComponent 
         geometry={n.Pearls.geometry} 
@@ -304,16 +375,28 @@ function Model({ currentSection, sectionProgress, ...props }) {
         castShadow={false}
         receiveShadow={false}
       />
-            
-      <TransmissionMesh 
-        geometry={n.Side3Diamonds.geometry} 
-        position={[0.07,1.139,-0.4]} 
-        rotation={[3.14,0,3.14]} 
-        scale={[0.03,0.034,0.03]}
-        transmissionProps={transmissionProps.sd}
-        castShadow={false}
-        receiveShadow={false}
-      />
+      
+      {useFallbackForSmallDiamonds ? (
+        <MeshComponent 
+          geometry={n.Side3Diamonds.geometry} 
+          position={[0.07,1.139,-0.4]} 
+          rotation={[3.14,0,3.14]} 
+          scale={[0.03,0.034,0.03]}
+          material={sharedMaterials.tintedGlassGreen}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      ) : (
+        <TransmissionMesh 
+          geometry={n.Side3Diamonds.geometry} 
+          position={[0.07,1.139,-0.4]} 
+          rotation={[3.14,0,3.14]} 
+          scale={[0.03,0.034,0.03]}
+          transmissionProps={transmissionProps.sd}
+          castShadow={false}
+          receiveShadow={false}
+        />
+      )}
       
       <MeshComponent 
         geometry={n.Crown1.geometry} 

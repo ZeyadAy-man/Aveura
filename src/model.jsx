@@ -169,24 +169,24 @@ function Model({ currentSection, sectionProgress, ...props }) {
   const transmissionProps = useMemo(() => {
     const qualitySettings = {
       high: {
-        mainSamples: 4,
-        mainResolution: 512,
-        smallSamples: 2,
+        mainSamples: 6,
+        mainResolution: 1024,
+        smallSamples: 4,
         smallResolution: 256,
-        blur: 0.15
+        blur: 0.08
       },
       medium: {
-        mainSamples: 4,
+        mainSamples: 2,
         mainResolution: 256,
-        smallSamples: 2,
-        smallResolution: 128,
+        smallSamples: 1,
+        smallResolution: 64,
         blur: 0.25
       },
       low: {
-        mainSamples: 1,
+        mainSamples: 2,
         mainResolution: 128,
         smallSamples: 1,
-        smallResolution: 64,
+        smallResolution: 32,
         blur: 0.35
       }
     };

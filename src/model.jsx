@@ -5,7 +5,49 @@ import * as THREE from "three";
 
 const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-// Memoized mesh component to prevent unnecessary re-renders
+// GPU tier detection
+const detectGPUTier = () => {
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  
+  if (!gl) return 'low';
+  
+  const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+  const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
+  
+  // Check for mobile
+  const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent);
+  
+  // Mobile detection
+  if (isMobile) {
+    // High-end mobile GPUs
+    if (renderer.includes('Apple A1') || renderer.includes('Adreno 7') || renderer.includes('Mali-G7')) {
+      return 'medium';
+    }
+    return 'low';
+  }
+  
+  // Desktop GPU detection
+  const highEndKeywords = ['RTX', 'RX 6', 'RX 7', 'GTX 16', 'GTX 20', 'GTX 30', 'GTX 40', 'M1', 'M2', 'M3'];
+  const midEndKeywords = ['GTX 10', 'GTX 9', 'RX 5', 'Intel Iris', 'Radeon', 'GeForce'];
+  
+  for (const keyword of highEndKeywords) {
+    if (renderer.includes(keyword)) return 'high';
+  }
+  
+  for (const keyword of midEndKeywords) {
+    if (renderer.includes(keyword)) return 'medium';
+  }
+  
+  // Check max texture size as fallback
+  const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  if (maxTextureSize >= 16384) return 'high';
+  if (maxTextureSize >= 8192) return 'medium';
+  
+  return 'low';
+};
+
+// Memoized mesh component
 const MeshComponent = memo(({ geometry, material, ...props }) => (
   <mesh geometry={geometry} material={material} {...props} />
 ));
@@ -20,10 +62,16 @@ function Model({ currentSection, sectionProgress, ...props }) {
   const gRef = useRef();
   const { nodes } = useGLTF("/ring.glb");
   const [scale, setScale] = useState({ s: 1, p: 1 });
+  const [gpuTier, setGpuTier] = useState('medium');
   const tgt = useRef({ pos: new THREE.Vector3(), rot: new THREE.Euler(), scale: 1 });
   const prevSection = useRef(currentSection);
 
   useEffect(() => {
+    // Detect GPU tier once on mount
+    const tier = detectGPUTier();
+    setGpuTier(tier);
+    console.log('GPU Tier detected:', tier);
+    
     const update = () => {
       const w = window.innerWidth;
       const newScale = w < 640 ? { s: 0.5, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
@@ -54,7 +102,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
     const n = kf[section + 1];
     const t = tgt.current;
 
-    // Only recalculate if section changed or animating
     if (n && prevSection.current === currentSection) {
       const e = ease(sectionProgress);
       t.pos.x = c[0][0] + (n[0][0] - c[0][0]) * e;
@@ -74,7 +121,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
 
     prevSection.current = currentSection;
 
-    // Smooth interpolation - optimized
     const lerpFactor = 0.05;
     g.position.x += (t.pos.x - g.position.x) * lerpFactor;
     g.position.y += (t.pos.y - g.position.y) * lerpFactor;
@@ -88,14 +134,12 @@ function Model({ currentSection, sectionProgress, ...props }) {
     g.scale.set(scaleVal, scaleVal, scaleVal);
   });
 
-  // Memoized colors
   const col = useMemo(() => ({
     w: new THREE.Color(0xffffff), b: new THREE.Color(0x4169e1),
     g: new THREE.Color(0x026d12), p: new THREE.Color(0x520069),
     gd: new THREE.Color(0xffd700), pr: new THREE.Color(0xfff5e1)
   }), []);
 
-  // Shared materials with disposal
   const sharedMaterials = useMemo(() => {
     const mtMat = new THREE.MeshStandardMaterial({
       color: col.gd,
@@ -114,7 +158,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
     return { mtMat, plMat };
   }, [col]);
 
-  // Cleanup materials on unmount
   useEffect(() => {
     return () => {
       sharedMaterials.mtMat.dispose();
@@ -122,69 +165,103 @@ function Model({ currentSection, sectionProgress, ...props }) {
     };
   }, [sharedMaterials]);
 
-  // Ultra-aggressive transmission optimization
-  const transmissionProps = useMemo(() => ({
-    md: {
-      transmission: 1,
-      thickness: 0.35,
-      roughness: 0,
-      metalness: 0,
-      ior: 2.3,
-      chromaticAberration: 0.02,
-      envMapIntensity: 2.2,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.05,
-      attenuationDistance: 0.12,
-      attenuationColor: col.w,
-      color: col.w,
-      samples: 2,
-      resolution: 256,
-      anisotropicBlur: 0.15,
-      temporalDistortion: 0,
-      distortion: 0,
-      distortionScale: 0
-    },
-    sd: {
-      transmission: 0.65,
-      thickness: 0.15,
-      roughness: 0.08,
-      metalness: 0,
-      ior: 2.0,
-      chromaticAberration: 0.01,
-      envMapIntensity: 2.0,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.15,
-      attenuationDistance: 0.08,
-      attenuationColor: col.b,
-      color: col.g,
-      samples: 1,
-      resolution: 64,
-      anisotropicBlur: 0.25,
-      temporalDistortion: 0,
-      distortion: 0,
-      distortionScale: 0
-    },
-    sd1: {
-      transmission: 0.65,
-      thickness: 0.15,
-      roughness: 0.08,
-      metalness: 0,
-      ior: 2.0,
-      chromaticAberration: 0.01,
-      envMapIntensity: 2.0,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.15,
-      attenuationDistance: 0.08,
-      attenuationColor: col.b,
-      color: col.p,
-      samples: 1,
-      resolution: 64,
-      anisotropicBlur: 0.25,
-      temporalDistortion: 0,
-      distortion: 0,
-      distortionScale: 0
-    }
-  }), [col]);
+  // Adaptive quality based on GPU tier
+  const transmissionProps = useMemo(() => {
+    const qualitySettings = {
+      high: {
+        mainSamples: 10,
+        mainResolution: 2048,
+        smallSamples: 6,
+        smallResolution: 512,
+        blur: 0.05
+      },
+      medium: {
+        mainSamples: 6,
+        mainResolution: 1024,
+        smallSamples: 3,
+        smallResolution: 256,
+        blur: 0.1
+      },
+      low: {
+        mainSamples: 3,
+        mainResolution: 512,
+        smallSamples: 2,
+        smallResolution: 128,
+        blur: 0.2
+      }
+    };
+
+    const settings = qualitySettings[gpuTier];
+
+    return {
+      md: {
+        transmission: 1,
+        thickness: 0.4,
+        roughness: 0,
+        metalness: 0,
+        ior: 2.42,
+        chromaticAberration: gpuTier === 'high' ? 0.04 : 0.03,
+        envMapIntensity: 2.5,
+        clearcoat: 1,
+        clearcoatRoughness: 0,
+        attenuationDistance: 0.15,
+        attenuationColor: col.w,
+        color: col.w,
+        samples: settings.mainSamples,
+        resolution: settings.mainResolution,
+        anisotropicBlur: settings.blur,
+        temporalDistortion: 0,
+        distortion: 0,
+        distortionScale: 0,
+        backside: gpuTier !== 'low',
+        backsideThickness: 0.1
+      },
+      sd: {
+        transmission: 0.7,
+        thickness: 0.2,
+        roughness: gpuTier === 'low' ? 0.1 : 0.05,
+        metalness: 0,
+        ior: 2.2,
+        chromaticAberration: gpuTier === 'high' ? 0.03 : 0.02,
+        envMapIntensity: 2.5,
+        clearcoat: gpuTier === 'low' ? 0.6 : 0.8,
+        clearcoatRoughness: 0.1,
+        attenuationDistance: 0.1,
+        attenuationColor: col.b,
+        color: col.g,
+        samples: settings.smallSamples,
+        resolution: settings.smallResolution,
+        anisotropicBlur: settings.blur * 1.5,
+        temporalDistortion: 0,
+        distortion: 0,
+        distortionScale: 0,
+        backside: gpuTier === 'high',
+        backsideThickness: 0.05
+      },
+      sd1: {
+        transmission: 0.7,
+        thickness: 0.2,
+        roughness: gpuTier === 'low' ? 0.1 : 0.05,
+        metalness: 0,
+        ior: 2.2,
+        chromaticAberration: gpuTier === 'high' ? 0.03 : 0.02,
+        envMapIntensity: 2.5,
+        clearcoat: gpuTier === 'low' ? 0.6 : 0.8,
+        clearcoatRoughness: 0.1,
+        attenuationDistance: 0.1,
+        attenuationColor: col.b,
+        color: col.p,
+        samples: settings.smallSamples,
+        resolution: settings.smallResolution,
+        anisotropicBlur: settings.blur * 1.5,
+        temporalDistortion: 0,
+        distortion: 0,
+        distortionScale: 0,
+        backside: gpuTier === 'high',
+        backsideThickness: 0.05
+      }
+    };
+  }, [col, gpuTier]);
 
   const n = nodes;
 

@@ -187,7 +187,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
         mainResolution: 128,
         smallSamples: 1,
         smallResolution: 64,
-        blur: 0.25
+        blur: 0.35
       }
     };
 

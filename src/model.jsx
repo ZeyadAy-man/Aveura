@@ -148,11 +148,20 @@ function Model({ currentSection, sectionProgress, ...props }) {
       envMapIntensity: 1.5
     });
 
-    const plMat = new THREE.MeshStandardMaterial({
+    const plMat = new THREE.MeshPhysicalMaterial({
       color: col.pr,
-      roughness: 0.3,
-      metalness: 0.1,
-      envMapIntensity: 0.8
+      metalness: 0,
+      roughness: 0.15,
+      clearcoat: 1,
+      clearcoatRoughness: 0.05,
+      sheen: 1,
+      sheenRoughness: 0.3,
+      sheenColor: new THREE.Color(0xffd1dc),
+      iridescence: 0.6,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [100, 400],
+      envMapIntensity: 1.2,
+      reflectivity: 0.5
     });
 
     // Diamond-like material for low-end devices (fallback)

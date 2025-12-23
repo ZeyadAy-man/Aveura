@@ -165,29 +165,29 @@ function Model({ currentSection, sectionProgress, ...props }) {
     };
   }, [sharedMaterials]);
 
-  // Adaptive quality based on GPU tier
+  // Adaptive quality based on GPU tier - Reduced for better performance
   const transmissionProps = useMemo(() => {
     const qualitySettings = {
       high: {
-        mainSamples: 10,
-        mainResolution: 2048,
-        smallSamples: 6,
-        smallResolution: 512,
-        blur: 0.05
-      },
-      medium: {
-        mainSamples: 6,
-        mainResolution: 1024,
-        smallSamples: 3,
-        smallResolution: 256,
-        blur: 0.1
-      },
-      low: {
-        mainSamples: 3,
+        mainSamples: 4,
         mainResolution: 512,
         smallSamples: 2,
+        smallResolution: 256,
+        blur: 0.15
+      },
+      medium: {
+        mainSamples: 4,
+        mainResolution: 256,
+        smallSamples: 2,
         smallResolution: 128,
-        blur: 0.2
+        blur: 0.15
+      },
+      low: {
+        mainSamples: 1,
+        mainResolution: 128,
+        smallSamples: 1,
+        smallResolution: 64,
+        blur: 0.25
       }
     };
 
@@ -197,13 +197,13 @@ function Model({ currentSection, sectionProgress, ...props }) {
       md: {
         transmission: 1,
         thickness: 0.4,
-        roughness: 0,
+        roughness: gpuTier === 'low' ? 0.05 : 0,
         metalness: 0,
         ior: 2.42,
-        chromaticAberration: gpuTier === 'high' ? 0.04 : 0.03,
-        envMapIntensity: 2.5,
-        clearcoat: 1,
-        clearcoatRoughness: 0,
+        chromaticAberration: gpuTier === 'high' ? 0.03 : gpuTier === 'medium' ? 0.02 : 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
+        clearcoat: gpuTier === 'low' ? 0.5 : 1,
+        clearcoatRoughness: gpuTier === 'low' ? 0.1 : 0,
         attenuationDistance: 0.15,
         attenuationColor: col.w,
         color: col.w,
@@ -213,18 +213,18 @@ function Model({ currentSection, sectionProgress, ...props }) {
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
-        backside: gpuTier !== 'low',
-        backsideThickness: 0.1
+        backside: gpuTier === 'high',
+        backsideThickness: gpuTier === 'high' ? 0.1 : 0.05
       },
       sd: {
         transmission: 0.7,
         thickness: 0.2,
-        roughness: gpuTier === 'low' ? 0.1 : 0.05,
+        roughness: gpuTier === 'low' ? 0.15 : 0.05,
         metalness: 0,
         ior: 2.2,
-        chromaticAberration: gpuTier === 'high' ? 0.03 : 0.02,
-        envMapIntensity: 2.5,
-        clearcoat: gpuTier === 'low' ? 0.6 : 0.8,
+        chromaticAberration: gpuTier === 'high' ? 0.02 : 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
+        clearcoat: gpuTier === 'low' ? 0.3 : gpuTier === 'medium' ? 0.5 : 0.8,
         clearcoatRoughness: 0.1,
         attenuationDistance: 0.1,
         attenuationColor: col.b,
@@ -235,18 +235,18 @@ function Model({ currentSection, sectionProgress, ...props }) {
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
-        backside: gpuTier === 'high',
+        backside: false,
         backsideThickness: 0.05
       },
       sd1: {
         transmission: 0.7,
         thickness: 0.2,
-        roughness: gpuTier === 'low' ? 0.1 : 0.05,
+        roughness: gpuTier === 'low' ? 0.15 : 0.05,
         metalness: 0,
         ior: 2.2,
-        chromaticAberration: gpuTier === 'high' ? 0.03 : 0.02,
-        envMapIntensity: 2.5,
-        clearcoat: gpuTier === 'low' ? 0.6 : 0.8,
+        chromaticAberration: gpuTier === 'high' ? 0.02 : 0.01,
+        envMapIntensity: gpuTier === 'low' ? 1.5 : 2.5,
+        clearcoat: gpuTier === 'low' ? 0.3 : gpuTier === 'medium' ? 0.5 : 0.8,
         clearcoatRoughness: 0.1,
         attenuationDistance: 0.1,
         attenuationColor: col.b,
@@ -257,7 +257,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
         temporalDistortion: 0,
         distortion: 0,
         distortionScale: 0,
-        backside: gpuTier === 'high',
+        backside: false,
         backsideThickness: 0.05
       }
     };

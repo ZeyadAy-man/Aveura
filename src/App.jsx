@@ -46,7 +46,7 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
           justifyContent: "center",
           textAlign: "right",
           paddingRight: "clamp(40px, 8vw, 80px)",
-          paddingLeft: "50%"
+          marginLeft: "-80px",
         };
       case 'up':
         return {
@@ -104,7 +104,7 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
   };
 
   return (
-    <div style={{ position: "relative", zIndex: 2, pointerEvents: "none", width: "100vw" }}>
+    <>
       {sections.map((section, index) => {
         const isActive = currentSection === index;
         const animStyle = getAnimationStyle(section, isActive);
@@ -114,14 +114,19 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
           <div 
             key={index} 
             style={{ 
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
               height: "100vh", 
               display: "flex", 
               flexDirection: "column", 
               color: "white", 
               fontFamily: "'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif", 
               willChange: isActive ? "opacity, transform" : "auto",
-              position: "relative",
               overflowX: "hidden",
+              zIndex: 2,
+              pointerEvents: "none",
               ...containerStyle
             }}
           >
@@ -141,7 +146,8 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 lineHeight: "1.2",
-                fontStyle: "italic"
+                fontStyle: "italic",
+                maxWidth: "100%"
               }}>
                 {section.title}
               </h1>
@@ -163,12 +169,12 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
           </div>
         );
       })}
-    </div>
+    </>
   );
 });
 
 // Memoized progress indicator with responsive sizing
-const ProgressIndicator = memo(({ currentSection, sectionProgress }) => (
+const ProgressIndicator = memo(({ currentSection, sectionProgress, totalSections }) => (
   <div style={{ 
     position: "fixed", 
     top: "clamp(10px, 3vw, 20px)", 
@@ -183,7 +189,7 @@ const ProgressIndicator = memo(({ currentSection, sectionProgress }) => (
     backdropFilter: "blur(10px)",
     userSelect: "none"
   }}>
-    Section {currentSection + 1} / 10
+    Section {currentSection + 1} / {totalSections}
     <div style={{ 
       width: "clamp(60px, 15vw, 100px)", 
       height: "clamp(3px, 1vw, 4px)", 
@@ -206,6 +212,7 @@ const ProgressIndicator = memo(({ currentSection, sectionProgress }) => (
 export default function App() {
   const [currentSection, setCurrentSection] = useState(0);
   const [sectionProgress, setSectionProgress] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const rafRef = useRef(null);
   const scrollDirectionRef = useRef(0);
   const lastScrollTopRef = useRef(0);
@@ -224,21 +231,39 @@ export default function App() {
     { title: "Forever Yours", subtitle: "The ultimate expression of love", direction: "down" },
   ], []);
 
+  // Update viewport height on mount and resize
+  useEffect(() => {
+    const updateHeight = () => {
+      // Use visualViewport if available (better for mobile), otherwise use window.innerHeight
+      const height = window.visualViewport?.height || window.innerHeight;
+      setViewportHeight(height);
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("resize", updateHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+    };
+  }, []);
+
   // Optimized scroll handler using RAF with improved state batching
   const handleScroll = useCallback(() => {
     if (rafRef.current) return;
     
     rafRef.current = requestAnimationFrame(() => {
-      const scrollTop = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const section = Math.floor(scrollTop / viewportHeight);
-      const progressInSection = (scrollTop % viewportHeight) / viewportHeight;
+      const scrollTop = window.scrollY || window.pageYOffset;
+      const height = viewportHeight || window.innerHeight;
+      const section = Math.floor(scrollTop / height);
+      const progressInSection = (scrollTop % height) / height;
 
       // Track scroll direction
       scrollDirectionRef.current = scrollTop > lastScrollTopRef.current ? 1 : -1;
       lastScrollTopRef.current = scrollTop;
 
-      const newSection = Math.min(Math.max(section, 0), 9);
+      const newSection = Math.min(Math.max(section, 0), sections.length - 1);
       
       // Batch state updates using React 18's automatic batching
       setCurrentSection(prev => prev !== newSection ? newSection : prev);
@@ -246,22 +271,26 @@ export default function App() {
       
       rafRef.current = null;
     });
-  }, []);
+  }, [sections.length, viewportHeight]);
 
   useEffect(() => {
+    if (viewportHeight === 0) return;
+    
     handleScroll();
     
     // Passive listener for better scroll performance
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-  }, [handleScroll]);
+  }, [handleScroll, viewportHeight]);
 
   // Memoized Canvas configuration
   const canvasProps = useMemo(() => ({
@@ -277,8 +306,23 @@ export default function App() {
     performance: { min: 0.5 }
   }), []);
 
+  // Calculate total scroll height - add extra buffer for mobile
+  const scrollHeight = useMemo(() => {
+    const baseHeight = sections.length * 100;
+    // Add 10vh buffer for mobile browsers to ensure last section is reachable
+    return `${baseHeight + 10}vh`;
+  }, [sections.length]);
+
   return (
-    <div style={{ width: "100%", position: "relative" }}>
+    <>
+      {/* Scroll spacer to enable scrolling through all sections with buffer */}
+      <div style={{ 
+        height: scrollHeight, 
+        width: "100%", 
+        position: "relative",
+        minHeight: `${sections.length * (viewportHeight || 800)}px`
+      }} />
+      
       {/* Fixed Canvas */}
       <div style={{ 
         position: "fixed", 
@@ -321,12 +365,11 @@ export default function App() {
       <ProgressIndicator 
         currentSection={currentSection} 
         sectionProgress={sectionProgress} 
+        totalSections={sections.length}
       />
 
-      {/* Section Text - with proper scroll height for all sections */}
-      <div style={{ height: `${sections.length * 100}vh` }}>
-        <SectionDisplay sections={sections} currentSection={currentSection} />
-      </div>
-    </div>
+      {/* Section Text - all sections are fixed and switch based on currentSection */}
+      <SectionDisplay sections={sections} currentSection={currentSection} />
+    </>
   );
 }

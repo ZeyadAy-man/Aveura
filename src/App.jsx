@@ -51,18 +51,16 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
       case 'up':
         return {
           alignItems: "center",
-          justifyContent: "flex-start",
+          justifyContent: "center",
           textAlign: "center",
-          paddingTop: "clamp(220px, 12vh, 100px)",
-          padding: "clamp(60px, 12vh, 100px) 20px 0 20px"
+          padding: "0 20px"
         };
       case 'down':
         return {
           alignItems: "center",
-          justifyContent: "flex-end",
+          justifyContent: "center",
           textAlign: "center",
-          paddingBottom: "clamp(220px, 12vh, 100px)",
-          padding: "0 20px clamp(60px, 12vh, 100px) 20px"
+          padding: "0 20px"
         };
       default:
         return {
@@ -120,7 +118,7 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
               display: "flex", 
               flexDirection: "column", 
               color: "white", 
-              fontFamily: "system-ui, -apple-system, sans-serif", 
+              fontFamily: "'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif", 
               willChange: isActive ? "opacity, transform" : "auto",
               position: "relative",
               overflowX: "hidden",
@@ -132,31 +130,32 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
               willChange: isActive ? "opacity, transform" : "auto"
             }}>
               <h1 style={{ 
-                fontSize: "clamp(2rem, 6vw, 5rem)", 
-                fontWeight: "900", 
+                fontSize: "clamp(2.25rem, 6.5vw, 5.5rem)", 
+                fontWeight: "400", 
                 textShadow: "0 0 60px rgba(255,255,255,0.3), 0 0 30px rgba(255,255,255,0.2), 0 2px 40px rgba(0,0,0,0.9)", 
-                marginBottom: "clamp(12px, 2.5vw, 24px)",
-                letterSpacing: "clamp(-1px, -0.02em, -2px)",
-                margin: "0 0 clamp(12px, 2.5vw, 24px) 0",
-                background: "linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #ffffff 100%)",
+                marginBottom: "clamp(16px, 3vw, 28px)",
+                letterSpacing: "clamp(2px, 0.12em, 8px)",
+                margin: "0 0 clamp(16px, 3vw, 28px) 0",
+                background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 30%, #ffffff 60%, #e8e8e8 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-                textTransform: "uppercase",
-                lineHeight: "1.1"
+                lineHeight: "1.2",
+                fontStyle: "italic"
               }}>
                 {section.title}
               </h1>
               <p style={{ 
-                fontSize: "clamp(1rem, 3vw, 1.75rem)", 
+                fontSize: "clamp(1rem, 2.75vw, 1.65rem)", 
                 textShadow: "0 0 30px rgba(255,255,255,0.15), 0 2px 20px rgba(0,0,0,0.8)",
-                opacity: 0.9,
+                opacity: 0.92,
                 maxWidth: isMobile() ? "clamp(300px, 90vw, 600px)" : "none",
-                lineHeight: "1.7",
+                lineHeight: "1.8",
                 margin: 0,
                 fontWeight: "300",
-                letterSpacing: "clamp(0.5px, 0.08em, 3px)",
-                color: "rgba(255, 255, 255, 0.95)"
+                letterSpacing: "clamp(1px, 0.1em, 4px)",
+                color: "rgba(255, 255, 255, 0.95)",
+                fontStyle: "normal"
               }}>
                 {section.subtitle}
               </p>
@@ -215,10 +214,10 @@ export default function App() {
   const sections = useMemo(() => [
     { title: "Elegance Unveiled", subtitle: "Scroll to explore our exquisite ring", direction: "up" },
     { title: "The Perfect Circle", subtitle: "Timeless design meets modern craftsmanship", direction: "down" },
-    { title: "Brilliance Captured", subtitle: "Every angle tells a story", direction: "left" },
+    { title: "Brilliance Captured", subtitle: "Every angle tells a story", direction: "right" },
     { title: "Crown Jewel", subtitle: "A masterpiece from above", direction: "right" },
-    { title: "Side Profile", subtitle: "Intricate details in gold", direction: "up" },
-    { title: "Artisan's Dream", subtitle: "Where luxury meets precision", direction: "down" },
+    { title: "Side Profile", subtitle: "Intricate details in gold", direction: "left" },
+    { title: "Artisan's Dream", subtitle: "Where luxury meets precision", direction: "left" },
     { title: "Diamond's Fire", subtitle: "Pure radiance and perfection", direction: "left" },
     { title: "Golden Details", subtitle: "Crafted with passion and care", direction: "right" },
     { title: "Full Presentation", subtitle: "A symbol of eternal beauty", direction: "up" },
@@ -319,10 +318,10 @@ export default function App() {
       </div>
 
       {/* Progress Indicator */}
-      <ProgressIndicator 
+      {/* <ProgressIndicator 
         currentSection={currentSection} 
         sectionProgress={sectionProgress} 
-      />
+      /> */}
 
       {/* Section Text */}
       <SectionDisplay sections={sections} currentSection={currentSection} />

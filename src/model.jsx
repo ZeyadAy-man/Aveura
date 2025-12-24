@@ -15,19 +15,15 @@ const detectGPUTier = () => {
   const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
   const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
   
-  // Check for mobile
   const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent);
   
-  // Mobile detection
   if (isMobile) {
-    // High-end mobile GPUs
     if (renderer.includes('Apple A1') || renderer.includes('Adreno 7') || renderer.includes('Mali-G7')) {
       return 'medium';
     }
     return 'low';
   }
   
-  // Desktop GPU detection
   const highEndKeywords = ['RTX', 'RX 6', 'RX 7', 'GTX 16', 'GTX 20', 'GTX 30', 'GTX 40', 'M1', 'M2', 'M3'];
   const midEndKeywords = ['GTX 10', 'GTX 9', 'RX 5', 'Intel Iris', 'Radeon', 'GeForce'];
   
@@ -39,7 +35,6 @@ const detectGPUTier = () => {
     if (renderer.includes(keyword)) return 'medium';
   }
   
-  // Check max texture size as fallback
   const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   if (maxTextureSize >= 16384) return 'high';
   if (maxTextureSize >= 8192) return 'medium';
@@ -47,7 +42,6 @@ const detectGPUTier = () => {
   return 'low';
 };
 
-// Memoized mesh component
 const MeshComponent = memo(({ geometry, material, ...props }) => (
   <mesh geometry={geometry} material={material} {...props} />
 ));
@@ -67,7 +61,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
   const prevSection = useRef(currentSection);
 
   useEffect(() => {
-    // Detect GPU tier once on mount
     const tier = detectGPUTier();
     setGpuTier(tier);
     console.log('GPU Tier detected:', tier);
@@ -85,11 +78,16 @@ function Model({ currentSection, sectionProgress, ...props }) {
   const kf = useMemo(() => {
     const { s, p } = scale;
     return [
-      [[0,0,0],[0,0,0],2*s],[[0,0.8*s,0],[1.57,0,0],3.2*s],
-      [[-p,0,0],[1.26,0,0.63],3.2*s],[[-3*p,0,0],[0,-1.31,-0.63],2.6*s],
-      [[1.5*p,0,0],[1.26,3.14,0.63],3.2*s],[[3*p,0,0],[0,-1.75,-0.63],2.6*s],
-      [[0,1.8*s,0],[0.52,0.79,0],4.5*s],[[-2*p,-0.5*s,0],[1.05,-1.05,0.52],3.8*s],
-      [[0,0,0],[0.79,4.71,0],2.8*s],[[0,-0.2*s,0],[0.39,1.05,-0.26],2.5*s]
+      [[0,0,0],[0,0,0],2*s],
+      [[0,0.8*s,0],[1.57,0,0],3.2*s],
+      [[-p,0,0],[1.26,0,0.63],3.2*s],
+      [[-3*p,0,0],[0,-1.31,-0.63],2.6*s],
+      [[1.5*p,0,0],[1.26,3.14,0.63],3.2*s],
+      [[3*p,0,0],[0,-1.75,-0.63],2.6*s],
+      [[0,1.8*s,0],[0.52,0.79,0],4.5*s],
+      [[-2*p,-0.5*s,0],[1.05,-1.05,0.52],3*s],
+      [[0,0,0],[0.79,4.71,0],2.8*s],
+      [[0,-0.2*s,0],[0.39,1.05,-0.26],2.5*s]
     ];
   }, [scale]);
 
@@ -102,7 +100,8 @@ function Model({ currentSection, sectionProgress, ...props }) {
     const n = kf[section + 1];
     const t = tgt.current;
 
-    if (n && prevSection.current === currentSection) {
+    // Always use eased interpolation when we have a next keyframe
+    if (n) {
       const e = ease(sectionProgress);
       t.pos.x = c[0][0] + (n[0][0] - c[0][0]) * e;
       t.pos.y = c[0][1] + (n[0][1] - c[0][1]) * e;
@@ -114,14 +113,21 @@ function Model({ currentSection, sectionProgress, ...props }) {
       
       t.scale = c[2] + (n[2] - c[2]) * e;
     } else {
-      t.pos.x = c[0][0]; t.pos.y = c[0][1]; t.pos.z = c[0][2];
-      t.rot.x = c[1][0]; t.rot.y = c[1][1]; t.rot.z = c[1][2];
+      // Last section - stay at current keyframe
+      t.pos.x = c[0][0];
+      t.pos.y = c[0][1];
+      t.pos.z = c[0][2];
+      t.rot.x = c[1][0];
+      t.rot.y = c[1][1];
+      t.rot.z = c[1][2];
       t.scale = c[2];
     }
 
     prevSection.current = currentSection;
 
-    const lerpFactor = 0.05;
+    // Smooth lerp with higher factor for responsive feel
+    const lerpFactor = 0.15;
+    
     g.position.x += (t.pos.x - g.position.x) * lerpFactor;
     g.position.y += (t.pos.y - g.position.y) * lerpFactor;
     g.position.z += (t.pos.z - g.position.z) * lerpFactor;
@@ -164,7 +170,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
       reflectivity: 0.5
     });
 
-    // Diamond-like material for low-end devices (fallback)
     const diamondMatSimple = new THREE.MeshPhysicalMaterial({
       color: col.w,
       metalness: 0.1,
@@ -206,7 +211,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
     });
 
     return { mtMat, plMat, diamondMatSimple, tintedGlassGreen, tintedGlassPurple };
-  }, [col, gpuTier]);
+  }, [col]);
 
   useEffect(() => {
     return () => {
@@ -218,7 +223,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
     };
   }, [sharedMaterials]);
 
-  // Adaptive quality based on GPU tier - Heavily optimized
   const transmissionProps = useMemo(() => {
     const qualitySettings = {
       high: {
@@ -322,7 +326,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
 
   return (
     <group ref={gRef} {...props} dispose={null}>
-      {/* Main Diamond - Keep transmission for high/medium, simple for low only */}
       {useFallbackForMainDiamond ? (
         <MeshComponent 
           geometry={n.MainDiamond.geometry} 
@@ -352,7 +355,6 @@ function Model({ currentSection, sectionProgress, ...props }) {
         receiveShadow={false}
       />
       
-      {/* Small diamonds - Use simple materials for low/medium */}
       {useFallbackForSmallDiamonds ? (
         <MeshComponent 
           geometry={n.Side5Diamonds.geometry} 

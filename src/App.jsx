@@ -278,7 +278,7 @@ export default function App() {
   }), []);
 
   return (
-    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+    <div style={{ width: "100%", position: "relative" }}>
       {/* Fixed Canvas */}
       <div style={{ 
         position: "fixed", 
@@ -323,8 +323,10 @@ export default function App() {
         sectionProgress={sectionProgress} 
       /> */}
 
-      {/* Section Text */}
-      <SectionDisplay sections={sections} currentSection={currentSection} />
+      {/* Section Text - with proper scroll height for all sections */}
+      <div style={{ height: `${sections.length * 100}vh` }}>
+        <SectionDisplay sections={sections} currentSection={currentSection} />
+      </div>
     </div>
   );
 }

@@ -318,10 +318,10 @@ export default function App() {
       </div>
 
       {/* Progress Indicator */}
-      {/* <ProgressIndicator 
+      <ProgressIndicator 
         currentSection={currentSection} 
         sectionProgress={sectionProgress} 
-      /> */}
+      />
 
       {/* Section Text - with proper scroll height for all sections */}
       <div style={{ height: `${sections.length * 100}vh` }}>

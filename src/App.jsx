@@ -27,7 +27,7 @@ const SectionDisplay = memo(({ sections, currentSection }) => {
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        padding: "0 20px"
+        padding: "0 0px"
       };
     }
 

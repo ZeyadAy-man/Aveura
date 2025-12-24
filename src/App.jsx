@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import Model from "./model.jsx";
+import LuxuryLoader from "./LoadingPage.jsx";
 
 // Memoized section display component with directional animations
 const SectionDisplay = memo(({ sections, currentSection }) => {
@@ -352,21 +353,24 @@ export default function App() {
             intensity={1} 
             castShadow={false}
           />
+          <Suspense>
           <Model 
             currentSection={currentSection} 
             sectionProgress={sectionProgress} 
             position={[0, 0, 0]} 
           />
+          </Suspense>
           <Environment preset="sunset" environmentIntensity={0.8} />
         </Canvas>
       </div>
 
       {/* Progress Indicator */}
-      <ProgressIndicator 
+      {/* <ProgressIndicator 
         currentSection={currentSection} 
         sectionProgress={sectionProgress} 
         totalSections={sections.length}
-      />
+      /> */}
+      <LuxuryLoader/>
 
       {/* Section Text - all sections are fixed and switch based on currentSection */}
       <SectionDisplay sections={sections} currentSection={currentSection} />

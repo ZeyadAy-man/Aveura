@@ -234,7 +234,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
       },
       medium: {
         mainSamples: 3,
-        mainResolution: 300,
+        mainResolution: 280,
         smallSamples: 1,
         smallResolution: 32,
         blur: 0.25

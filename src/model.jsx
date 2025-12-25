@@ -241,9 +241,9 @@ function Model({ currentSection, sectionProgress, ...props }) {
       },
       low: {
         mainSamples: 1,
-        mainResolution: 128,
+        mainResolution: 64,
         smallSamples: 1,
-        smallResolution: 64,
+        smallResolution: 32,
         blur: 0.4
       }
     };

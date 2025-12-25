@@ -67,7 +67,7 @@ function Model({ currentSection, sectionProgress, ...props }) {
     
     const update = () => {
       const w = window.innerWidth;
-      const newScale = w < 640 ? { s: 0.5, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
+      const newScale = w < 640 ? { s: 0.4, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
       setScale(newScale);
     };
     update();
@@ -234,9 +234,9 @@ function Model({ currentSection, sectionProgress, ...props }) {
       },
       medium: {
         mainSamples: 3,
-        mainResolution: 384,
+        mainResolution: 300,
         smallSamples: 1,
-        smallResolution: 64,
+        smallResolution: 32,
         blur: 0.25
       },
       low: {

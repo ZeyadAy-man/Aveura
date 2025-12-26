@@ -9,9 +9,10 @@ import React, {
 } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
-import Model from "./model.jsx";
 import LuxuryLoader from "./LoadingPage.jsx";
-
+import Model from "./Components/Model.jsx";
+import { GPUProvider } from "./Utils/GPUProvider.jsx";
+import { GPUDebugPanel } from "./Components/GPUDebugDetector.jsx";
 // Memoized section display component with directional animations
 const SectionDisplay = memo(({ sections, currentSection }) => {
   // Get responsive offset based on screen width
@@ -412,6 +413,8 @@ export default function App() {
           willChange: "transform",
         }}
       >
+        <GPUProvider>
+        <GPUDebugPanel/>
         <Canvas {...canvasProps}>
           <color attach="background" args={["#0a0a0a"]} />
           <ambientLight intensity={0.5} />
@@ -440,6 +443,7 @@ export default function App() {
           </Suspense>
           <Environment preset="sunset" environmentIntensity={0.8} />
         </Canvas>
+        </GPUProvider>
       </div>
 
       {/* Progress Indicator */}

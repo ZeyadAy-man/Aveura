@@ -1,135 +1,138 @@
-import { useRef, useState, useEffect, useMemo, useCallback, memo } from "react";
+import { memo, useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import ease from "../Utils/ease";
-import MATERIAL_PRESETS from "../Data/Material";
-import detectGPUTier from "../Utils/GPUDetector";
-import MeshComponent from "./MeshComponent";
+import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
+import { useQualityProvider } from "../Utils/QualityProvider";
 
-// TransmissionMesh with forced re-creation on prop changes
-const TransmissionMesh = ({ geometry, transmissionProps, ...props }) => {
-  const meshRef = useRef();
-  
-  // Force material recreation when resolution/samples change
-  const materialKey = `${transmissionProps.resolution}-${transmissionProps.samples}-${transmissionProps.anisotropicBlur}`;
-  
-  useEffect(() => {
-    console.log('🔷 Material updated with resolution:', transmissionProps.resolution, 'samples:', transmissionProps.samples);
-  }, [transmissionProps.resolution, transmissionProps.samples]);
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+const MeshComponent = memo(({ geometry, material, ...props }) => (
+  <mesh geometry={geometry} material={material} {...props} />
+));
+
+const TransmissionMesh = memo(({ geometry, transmissionProps, ...props }) => {
+  const materialKey = `${transmissionProps.resolution}-${transmissionProps.samples}-${transmissionProps.transmission}`;
   
   return (
-    <mesh ref={meshRef} geometry={geometry} {...props}>
-      <MeshTransmissionMaterial 
-        key={materialKey}
-        {...transmissionProps} 
-      />
+    <mesh geometry={geometry} {...props}>
+      <MeshTransmissionMaterial key={materialKey} {...transmissionProps} />
     </mesh>
   );
-};
+});
 
-export default function Model({ currentSection, sectionProgress, onPartsDetected, onPartSelect, selectedPartId, parts: externalParts, ...props }) {
+function Model({
+  currentSection = 0,
+  sectionProgress = 0,
+  onPartsDetected,
+  ...props
+}) {
   const gRef = useRef();
   const { nodes } = useGLTF("/ring.glb");
   const [scale, setScale] = useState({ s: 1, p: 1 });
-  const [gpuTier, setGpuTier] = useState('medium');
-  const [hovered, setHovered] = useState(null);
-  const tgt = useRef({ pos: new THREE.Vector3(), rot: new THREE.Euler(), scale: 1 });
+  
+  const quality = useQualityProvider();
+  console.log('🎚️ Selected Quality:', quality?.selectedQuality);
+  
+  const tgt = useRef({
+    pos: new THREE.Vector3(),
+    rot: new THREE.Euler(),
+    scale: 1,
+  });
   const prevSection = useRef(currentSection);
-  const materialsRef = useRef(new Map());
 
-  const detectPartType = (name) => {
-    const lower = name.toLowerCase();
-    
-    if (lower.includes('pearl')) return 'pearl';
-    
-    if (lower.includes('stone') || lower.includes('diamond') || 
-        lower.includes('gem') || lower.includes('ruby') || 
-        lower.includes('sapphire') || lower.includes('emerald')) {
-      return 'stone';
-    }
-    
-    if (lower.includes('crown') || lower.includes('band') || lower.includes('ring') || 
-        lower.includes('shank') || lower.includes('metal') ||
-        lower.includes('prong') || lower.includes('setting')) {
-      return 'metal';
-    }
-    
-    return 'metal';
-  };
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      const newScale =
+        w < 640
+          ? { s: 0.4, p: 0.35 }
+          : w < 1024
+          ? { s: 0.6, p: 0.5 }
+          : { s: 1, p: 1 };
+      setScale(newScale);
+    };
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     const detectedParts = [];
-    
+
+    const detectPartType = (name) => {
+      const lower = name.toLowerCase();
+      if (lower.includes("pearl")) return "pearl";
+      if (
+        lower.includes("stone") ||
+        lower.includes("diamond") ||
+        lower.includes("gem") ||
+        lower.includes("ruby") ||
+        lower.includes("sapphire") ||
+        lower.includes("emerald")
+      ) {
+        return "stone";
+      }
+      if (
+        lower.includes("crown") ||
+        lower.includes("band") ||
+        lower.includes("ring") ||
+        lower.includes("shank") ||
+        lower.includes("metal") ||
+        lower.includes("prong") ||
+        lower.includes("setting")
+      ) {
+        return "metal";
+      }
+      return "metal";
+    };
+
     Object.entries(nodes).forEach(([name, node]) => {
       if (node.geometry) {
         const partType = detectPartType(name);
-        const materialType = partType === 'stone' ? 'diamond' : 
-                           partType === 'pearl' ? 'white' : 'gold';
-        
+        const materialType =
+          partType === "stone"
+            ? "diamond"
+            : partType === "pearl"
+            ? "white"
+            : "gold";
+
         detectedParts.push({
           id: name,
           name: name,
           type: partType,
-          node: node,
           geometry: node.geometry,
           position: node.position,
           rotation: node.rotation,
           scale: node.scale,
-          currentMaterialType: materialType
+          currentMaterialType: materialType,
         });
       }
     });
-    
-    onPartsDetected?.(detectedParts);
-    console.log('Auto-detected parts:', detectedParts);
-  }, [nodes, onPartsDetected]);
 
-  useEffect(() => {
-    const tier = detectGPUTier();
-    setGpuTier(tier);
-    console.log('GPU Tier detected:', tier);
-    
-    // Listen for manual GPU tier changes (for testing)
-    const handleGPUTierChange = (e) => {
-      console.log('🎮 Manually changing GPU tier to:', e.detail);
-      setGpuTier(e.detail);
-    };
-    window.addEventListener('changeGPUTier', handleGPUTierChange);
-    
-    const update = () => {
-      const w = window.innerWidth;
-      const newScale = w < 640 ? { s: 0.5, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
-      setScale(newScale);
-    };
-    update();
-    window.addEventListener('resize', update, { passive: true });
-    return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('changeGPUTier', handleGPUTierChange);
-    };
-  }, []);
+    onPartsDetected?.(detectedParts);
+    console.log("Auto-detected parts:", detectedParts);
+  }, [nodes, onPartsDetected]);
 
   const kf = useMemo(() => {
     const { s, p } = scale;
     return [
-      [[0,0,0],[0,0,0],2*s],
-      [[0,0.8*s,0],[1.57,0,0],3.2*s],
-      [[-p,0,0],[1.26,0,0.63],3.2*s],
-      [[-3*p,0,0],[0,-1.31,-0.63],2.6*s],
-      [[1.5*p,0,0],[1.26,3.14,0.63],3.2*s],
-      [[3*p,0,0],[0,-1.75,-0.63],2.6*s],
-      [[0,1.8*s,0],[0.52,0.79,0],4.5*s],
-      [[-2*p,-0.5*s,0],[1.05,-1.05,0.52],3*s],
-      [[0,0,0],[0.79,4.71,0],2.8*s],
-      [[0,-0.2*s,0],[0.39,1.05,-0.26],2.5*s]
+      [[0, 0, 0], [0, 0, 0], 2 * s],
+      [[0, 0.8 * s, 0], [1.57, 0, 0], 3.2 * s],
+      [[-p, 0, 0], [1.26, 0, 0.63], 3.2 * s],
+      [[-3 * p, 0, 0], [0, -1.31, -0.63], 2.6 * s],
+      [[1.5 * p, 0, 0], [1.26, 3.14, 0.63], 3.2 * s],
+      [[3 * p, 0, 0], [0, -1.75, -0.63], 2.6 * s],
+      [[0, 1.8 * s, 0], [0.52, 0.79, 0], 4.5 * s],
+      [[-2 * p, -0.5 * s, 0], [1.05, -1.05, 0.52], 3 * s],
+      [[0, 0, 0], [0.79, 4.71, 0], 2.8 * s],
+      [[0, -0.2 * s, 0], [0.39, 1.05, -0.26], 2.5 * s],
     ];
   }, [scale]);
 
   useFrame(() => {
     const g = gRef.current;
     if (!g) return;
-    
+
     const section = Math.min(currentSection, kf.length - 1);
     const c = kf[section];
     const n = kf[section + 1];
@@ -140,11 +143,11 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
       t.pos.x = c[0][0] + (n[0][0] - c[0][0]) * e;
       t.pos.y = c[0][1] + (n[0][1] - c[0][1]) * e;
       t.pos.z = c[0][2] + (n[0][2] - c[0][2]) * e;
-      
+
       t.rot.x = c[1][0] + (n[1][0] - c[1][0]) * e;
       t.rot.y = c[1][1] + (n[1][1] - c[1][1]) * e;
       t.rot.z = c[1][2] + (n[1][2] - c[1][2]) * e;
-      
+
       t.scale = c[2] + (n[2] - c[2]) * e;
     } else {
       t.pos.x = c[0][0];
@@ -159,238 +162,212 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
     prevSection.current = currentSection;
 
     const lerpFactor = 0.15;
-    
+
     g.position.x += (t.pos.x - g.position.x) * lerpFactor;
     g.position.y += (t.pos.y - g.position.y) * lerpFactor;
     g.position.z += (t.pos.z - g.position.z) * lerpFactor;
-    
+
     g.rotation.x += (t.rot.x - g.rotation.x) * lerpFactor;
     g.rotation.y += (t.rot.y - g.rotation.y) * lerpFactor;
     g.rotation.z += (t.rot.z - g.rotation.z) * lerpFactor;
-    
+
     const scaleVal = g.scale.x + (t.scale - g.scale.x) * lerpFactor;
     g.scale.set(scaleVal, scaleVal, scaleVal);
   });
 
-  const createMaterial = useCallback((part) => {
-    const cacheKey = `${part.id}-${part.currentMaterialType}`;
-    
-    if (materialsRef.current.has(cacheKey)) {
-      return materialsRef.current.get(cacheKey);
-    }
+  const col = useMemo(
+    () => ({
+      w: new THREE.Color(0xffffff),
+      gd: new THREE.Color(0xffd700),
+      pr: new THREE.Color(0xfff5e1),
+    }),
+    []
+  );
 
-    const preset = MATERIAL_PRESETS[part.type][part.currentMaterialType];
-    
-    let newMaterial;
-    if (part.type === 'pearl') {
-      newMaterial = new THREE.MeshPhysicalMaterial({
-        color: preset.color,
-        metalness: preset.metalness,
-        roughness: preset.roughness,
-        clearcoat: preset.clearcoat || 0,
-        clearcoatRoughness: preset.clearcoatRoughness || 0,
-        sheen: preset.sheen || 0,
-        sheenColor: preset.sheenColor || '#ffffff',
-        sheenRoughness: 0.3,
-        iridescence: 0.6,
-        iridescenceIOR: 1.3,
-        iridescenceThicknessRange: [100, 400],
-        envMapIntensity: preset.envMapIntensity,
-        reflectivity: 0.5
-      });
-    } else {
-      newMaterial = new THREE.MeshStandardMaterial({
-        color: preset.color,
-        metalness: preset.metalness,
-        roughness: preset.roughness,
-        envMapIntensity: preset.envMapIntensity
-      });
-    }
+  const sharedMaterials = useMemo(() => {
+    const mtMat = new THREE.MeshStandardMaterial({
+      color: col.gd,
+      metalness: 1,
+      roughness: 0.2,
+      envMapIntensity: 1.5,
+    });
 
-    materialsRef.current.set(cacheKey, newMaterial);
-    
-    return newMaterial;
-  }, []);
+    const plMat = new THREE.MeshPhysicalMaterial({
+      color: col.pr,
+      metalness: 0,
+      roughness: 0.15,
+      clearcoat: 1,
+      clearcoatRoughness: 0.05,
+      sheen: 1,
+      sheenRoughness: 0.3,
+      sheenColor: new THREE.Color(0xffd1dc),
+      iridescence: 0.6,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [100, 400],
+      envMapIntensity: 1.2,
+      reflectivity: 0.5,
+    });
 
-  // Helper function to determine diamond size category
+    // 💎 ULTRA REALISTIC simple diamond - fully transparent fallback
+    const diamondMatSimple = new THREE.MeshPhysicalMaterial({
+      color: col.w,
+      metalness: 0,
+      roughness: 0,
+      transmission: 0.95, // High transparency even in fallback
+      thickness: 1.0,
+      ior: 2.3,
+      reflectivity: 1.0,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0,
+      transparent: true,
+      opacity: 1.0,
+      envMapIntensity: 4.0,
+      iridescence: 0.5,
+      iridescenceIOR: 1.4,
+    });
+
+    return { mtMat, plMat, diamondMatSimple };
+  }, [col]);
+
+  useEffect(() => {
+    return () => {
+      sharedMaterials.mtMat.dispose();
+      sharedMaterials.plMat.dispose();
+      sharedMaterials.diamondMatSimple.dispose();
+    };
+  }, [sharedMaterials]);
+
   const getDiamondSize = (name) => {
     const lower = name.toLowerCase();
     
-    // Main/large diamonds
     if (lower.includes('main') || lower.includes('center') || lower.includes('large')) {
       return 'main';
     }
     
-    // Medium diamonds
     if (lower.includes('medium') || lower.includes('side')) {
       return 'medium';
     }
     
-    // Small/accent diamonds (default for most)
     if (lower.includes('small') || lower.includes('accent') || lower.includes('tiny')) {
       return 'small';
     }
     
-    // If it has a number > 3, it's probably a small accent diamond
     const numbers = name.match(/\d+/);
     if (numbers && parseInt(numbers[0]) > 3) {
       return 'small';
     }
     
-    // Default to small for safety
     return 'small';
   };
 
-  const getTransmissionProps = (part) => {
-    const preset = MATERIAL_PRESETS[part.type][part.currentMaterialType];
-    const isDiamond = part.currentMaterialType === 'diamond';
-    
-    // Determine diamond size
-    const diamondSize = isDiamond ? getDiamondSize(part.name) : 'small';
-    
-    // Quality settings with separate main and small diamond configs - EXTREME VALUES FOR TESTING
-    const qualitySettings = {
-      high: { 
-        mainResolution: 512, 
-        smallResolution: 256,
-        mainSamples: 6, 
-        smallSamples: 4,
-        blur: 0.0,
-        roughness: 0.0,
-        transmission: 1.0
-      },
-      medium: { 
-        mainResolution: 128,  // VERY LOW - should see pixelation
-        smallResolution: 64,   // VERY LOW - should see pixelation
-        mainSamples: 2, 
-        smallSamples: 1,
-        blur: 0.5,  // HIGH blur
-        roughness: 0.1,
-        transmission: 0.9
-      },
-      low: { 
-        mainResolution: 32,   // EXTREMELY LOW - obvious pixelation
-        smallResolution: 32,   // EXTREMELY LOW - obvious pixelation
-        mainSamples: 1, 
-        smallSamples: 1,
-        blur: 0.8,  // VERY HIGH blur
-        roughness: 0.3,
-        transmission: 0.7
-      }
+  const getTransmissionProps = useMemo(() => {
+    if (!quality) return () => ({});
+
+    const settings = quality.selectedQuality;
+
+    return (diamondName) => {
+      const diamondSize = getDiamondSize(diamondName);
+      const resolution = diamondSize === 'main' ? settings.mainRes : settings.smallRes;
+      const samples = diamondSize === 'main' ? settings.mainSamples : settings.smallSamples;
+      
+      console.log(`💎 ${diamondName} (${diamondSize}) - ${quality.selectedQuality.name}: transmission=${settings.transmission}, IOR=${settings.ior}`);
+
+      return {
+        samples: samples,
+        resolution: resolution,
+        
+        // 💎💎💎 MAXIMUM TRANSPARENCY & REALISM
+        transmission: settings.transmission, // 0.92-1.0 = VERY transparent
+        thickness: settings.thickness, // 0.7-2.0 = deep material
+        roughness: settings.roughness, // 0-0.02 = mirror smooth
+        metalness: 0,
+        ior: settings.ior, // 2.15-2.417 = accurate diamond refraction
+        
+        // ✨ REALISTIC LIGHT EFFECTS
+        chromaticAberration: settings.chromaticAberration, // Rainbow fire
+        distortion: settings.distortion, // Light bending
+        distortionScale: settings.distortionScale,
+        temporalDistortion: 0,
+        
+        anisotropicBlur: 0, // Keep sharp for transparency
+        
+        clearcoat: 0, // Don't need clearcoat with high transmission
+        clearcoatRoughness: 0,
+        
+        envMapIntensity: settings.envMapIntensity, // 1.8-5.5 = strong reflections
+        
+        // 💎 DEEP LIGHT PENETRATION
+        attenuationDistance: settings.attenuationDistance, // 0.8-4.0
+        attenuationColor: new THREE.Color(0xffffff), // Pure white
+        
+        color: col.w,
+        reflectivity: 1.0, // Maximum reflectivity
+        transparent: true,
+        opacity: 1.0, // Fully opaque surface (transparency through transmission)
+      };
     };
-    
-    const settings = qualitySettings[gpuTier];
-    
-    // Select resolution and samples based on diamond size
-    const resolution = diamondSize === 'main' ? settings.mainResolution : settings.smallResolution;
-    const samples = diamondSize === 'main' ? settings.mainSamples : settings.smallSamples;
-    
-    console.log(`💎 ${part.name} (${diamondSize}) - Tier ${gpuTier}:`, {
-      resolution,
-      samples,
-      blur: settings.blur,
-      roughness: settings.roughness,
-      transmission: settings.transmission
-    });
-    
-    return {
-      transmission: settings.transmission,  // CHANGED: Now uses tier-based transmission
-      thickness: preset.thickness,
-      roughness: settings.roughness,  // CHANGED: Now uses tier-based roughness
-      metalness: preset.metalness,
-      ior: preset.ior,
-      chromaticAberration: isDiamond ? (gpuTier === 'high' ? 0.08 : 0.04) : (gpuTier === 'high' ? 0.02 : 0.01),
-      envMapIntensity: gpuTier === 'low' ? 1.0 : preset.envMapIntensity,  // CHANGED: Lower on low tier
-      clearcoat: preset.clearcoat || (gpuTier === 'low' ? 0 : 0.8),
-      clearcoatRoughness: preset.clearcoatRoughness || 0.1,
-      attenuationDistance: isDiamond ? 0.01 : 0.2,
-      attenuationColor: preset.color,
-      color: preset.color,
-      reflectivity: preset.reflectivity || 0.5,
-      samples: samples,
-      resolution: resolution,
-      anisotropicBlur: settings.blur,
-      ...(isDiamond && gpuTier === 'high' && { 
-        distortion: 0.05,
-        distortionScale: 0.2,
-        temporalDistortion: 0.1
-      })
-    };
-  };
+  }, [col, quality]);
 
-  const handlePartClick = (part) => (e) => {
-    e.stopPropagation();
-    onPartSelect?.(part);
-  };
+  const useFallback = quality && (
+    quality.gpuScore <= 2 ||
+    (quality.gpuScore === 3 && quality.deviceTier >= 4)
+  );
 
-  const handlePartHover = (partId) => (e) => {
-    e.stopPropagation();
-    setHovered(partId);
-    document.body.style.cursor = 'pointer';
-  };
+  if (!quality) {
+    console.log('⏳ Waiting for quality detection...');
+    return null;
+  }
 
-  const handlePartOut = () => {
-    setHovered(null);
-    document.body.style.cursor = 'default';
-  };
+  const n = nodes;
+
+  const maxSmallDiamonds = quality.gpuScore >= 4 ? Infinity : 
+                           quality.gpuScore >= 3 ? 20 :
+                           quality.gpuScore >= 2 ? 10 : 5;
+  let smallDiamondCount = 0;
 
   return (
     <group ref={gRef} {...props} dispose={null}>
-      {externalParts.map((part) => {
-        const isSelected = selectedPartId === part.id;
-        const isHovered = hovered === part.id;
-        
-        console.log('🔍 Processing part:', part.name, 'type:', part.type);
-        
-        // ALWAYS use TransmissionMesh for stones (diamonds)
-        if (part.type === 'stone') {
-          const transmissionProps = getTransmissionProps(part);
-          console.log('💎 STONE DETECTED - Using TransmissionMesh:', part.name, transmissionProps);
-          return (
-            <group key={part.id}>
+      {Object.entries(n).map(([name, node]) => {
+        if (!node.geometry) return null;
+
+        const isDiamond = name.toLowerCase().includes("diamond");
+        const isPearl = name.toLowerCase().includes("pearl");
+        const diamondSize = isDiamond ? getDiamondSize(name) : null;
+
+        if (isDiamond && diamondSize === 'small') {
+          if (smallDiamondCount >= maxSmallDiamonds) {
+            return null;
+          }
+          smallDiamondCount++;
+        }
+
+        let material = sharedMaterials.mtMat;
+        if (isPearl) material = sharedMaterials.plMat;
+        if (isDiamond && useFallback) material = sharedMaterials.diamondMatSimple;
+
+        return (
+          <group key={name}>
+            {isDiamond && !useFallback ? (
               <TransmissionMesh
-                key={`${part.id}-${gpuTier}-${transmissionProps.resolution}`}
-                geometry={part.geometry}
-                position={part.position}
-                rotation={part.rotation}
-                scale={part.scale}
-                transmissionProps={transmissionProps}
-                onClick={handlePartClick(part)}
-                onPointerOver={handlePartHover(part.id)}
-                onPointerOut={handlePartOut}
+                key={`${name}-${quality.selectedQuality.name}`}
+                geometry={node.geometry}
+                position={node.position}
+                rotation={node.rotation}
+                scale={node.scale}
+                transmissionProps={getTransmissionProps(name)}
                 castShadow={false}
                 receiveShadow={false}
               />
-              {(isSelected || isHovered) && (
-                <mesh geometry={part.geometry} position={part.position} rotation={part.rotation} scale={part.scale}>
-                  <meshBasicMaterial color={isSelected ? "#ffff00" : "#ffffff"} wireframe transparent opacity={0.3} />
-                </mesh>
-              )}
-            </group>
-          );
-        }
-        
-        console.log('🔧 NON-STONE - Using MeshComponent:', part.name);
-        
-        // For non-stones (metal, pearls), use regular material
-        return (
-          <group key={part.id}>
-            <MeshComponent
-              geometry={part.geometry}
-              position={part.position}
-              rotation={part.rotation}
-              scale={part.scale}
-              material={createMaterial(part)}
-              onClick={handlePartClick(part)}
-              onPointerOver={handlePartHover(part.id)}
-              onPointerOut={handlePartOut}
-              castShadow={false}
-              receiveShadow={false}
-            />
-            {(isSelected || isHovered) && (
-              <mesh geometry={part.geometry} position={part.position} rotation={part.rotation} scale={part.scale}>
-                <meshBasicMaterial color={isSelected ? "#ffff00" : "#ffffff"} wireframe transparent opacity={0.3} />
-              </mesh>
+            ) : (
+              <MeshComponent
+                geometry={node.geometry}
+                position={node.position}
+                rotation={node.rotation}
+                scale={node.scale}
+                material={material}
+                castShadow={false}
+                receiveShadow={false}
+              />
             )}
           </group>
         );
@@ -398,3 +375,7 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
     </group>
   );
 }
+
+export default memo(Model);
+
+useGLTF.preload("/ring.glb");

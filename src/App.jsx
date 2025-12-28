@@ -11,6 +11,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import Model from "./Components/Model.jsx";
 import LuxuryLoader from "./LoadingPage.jsx";
+import { useDeviceType } from "./Utils/DeviceTypeDetector";
+import { useGPUDetection } from "./Utils/GPUDetector";
 
 const SectionDisplay = memo(({ sections, currentSection }) => {
   const getResponsiveOffset = () => {
@@ -196,6 +198,10 @@ export default function App() {
   const scrollDirectionRef = useRef(0);
   const lastScrollTopRef = useRef(0);
 
+  // Smart quality detection
+  const deviceType = useDeviceType();
+  const gpuInfo = useGPUDetection();
+
   const sections = useMemo(
     () => [
       {
@@ -308,23 +314,69 @@ export default function App() {
     };
   }, [handleScroll, viewportHeight]);
 
-  // ⚡⚡⚡ MAXIMUM GPU OPTIMIZATION
-  const canvasProps = useMemo(
-    () => ({
+  // ⚡ SMART CANVAS CONFIG - Antialiasing based on GPU + Screen Width
+  const canvasProps = useMemo(() => {
+    if (!deviceType || !gpuInfo) {
+      // Default fallback while loading
+      return {
+        camera: { position: [0, 2, 8], fov: 50 },
+        gl: {
+          antialias: false,
+          alpha: true,
+          powerPreference: "high-performance",
+          stencil: false,
+          depth: true,
+          logarithmicDepthBuffer: false,
+        },
+        dpr: [0.5, 1.25],
+        performance: { min: 0.5 },
+      };
+    }
+
+    const width = window.innerWidth;
+    const gpuScore = gpuInfo.score;
+    const deviceTier = deviceType.tier;
+
+    // Smart antialiasing logic:
+    // Enable if GPU score > 1 (anything better than low)
+    let antialias = false;
+    
+    if (gpuScore > 1) {
+      // GPU score 2-5 (Medium, High, Ultra, Extreme)
+      antialias = true;
+    }
+    // Only GPU score 1 (Low) has antialiasing disabled
+
+    // Smart DPR based on GPU + device
+    let dprMin = 0.75; // Increased from 0.5 for better edge quality
+    let dprMax = 1.5;  // Increased from 1.25
+    
+    if (gpuScore >= 4 && deviceTier === 1) {
+      // High-end desktop - can handle more
+      dprMin = 1.0;
+      dprMax = 2.0;
+    } else if (gpuScore <= 2 || deviceTier >= 4) {
+      // Low-end - still aggressive but not extreme
+      dprMin = 0.6;
+      dprMax = 1.25;
+    }
+
+    console.log(`🎨 Canvas Config: AA=${antialias}, DPR=[${dprMin}, ${dprMax}], GPU=${gpuScore}, Device=${deviceTier}, Width=${width}`);
+
+    return {
       camera: { position: [0, 2, 8], fov: 50 },
       gl: {
-        antialias: false, // ⚡ -15% GPU
+        antialias: antialias, // ⚡ Smart antialiasing
         alpha: true,
         powerPreference: "high-performance",
         stencil: false,
         depth: true,
-        logarithmicDepthBuffer: false, // ⚡ Extra optimization
+        logarithmicDepthBuffer: false,
       },
-      dpr: [0.5, 1.25], // ⚡⚡ ULTRA AGGRESSIVE - renders at 50% resolution = -60% GPU!
+      dpr: [dprMin, dprMax], // ⚡ Smart DPR
       performance: { min: 0.5 },
-    }),
-    []
-  );
+    };
+  }, [deviceType, gpuInfo]);
 
   const scrollHeight = useMemo(() => {
     const baseHeight = sections.length * 100;
@@ -356,9 +408,8 @@ export default function App() {
         <Canvas {...canvasProps}>
           <color attach="background" args={["#0a0a0a"]} />
           
-          {/* ⚡ ULTRA MINIMAL LIGHTING */}
-          <ambientLight intensity={0.7} /> {/* Increased to compensate for removed spotlight */}
-          <directionalLight position={[5, 5, 5]} intensity={1.2} /> {/* Cheaper than spotlight */}
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[5, 5, 5]} intensity={1.2} />
           
           <Suspense fallback={null}>
             <Model
@@ -368,11 +419,10 @@ export default function App() {
             />
           </Suspense>
           
-          {/* ⚡ MINIMAL ENVIRONMENT */}
           <Environment 
             preset="sunset" 
-            environmentIntensity={0.4} // ⚡ Reduced further
-            resolution={128} // ⚡⚡ ULTRA LOW (down from 256) = -30% more GPU saved!
+            environmentIntensity={0.4}
+            resolution={128}
             background={false}
           />
         </Canvas>

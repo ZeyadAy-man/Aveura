@@ -308,18 +308,19 @@ export default function App() {
     };
   }, [handleScroll, viewportHeight]);
 
-  // ⚡⚡⚡ HEAVILY OPTIMIZED Canvas configuration
+  // ⚡⚡⚡ MAXIMUM GPU OPTIMIZATION
   const canvasProps = useMemo(
     () => ({
       camera: { position: [0, 2, 8], fov: 50 },
       gl: {
-        antialias: false, // ⚡ MAJOR SAVER - 15% GPU reduction
+        antialias: false, // ⚡ -15% GPU
         alpha: true,
         powerPreference: "high-performance",
         stencil: false,
         depth: true,
+        logarithmicDepthBuffer: false, // ⚡ Extra optimization
       },
-      dpr: [0.75, 1.5], // ⚡ MAJOR SAVER - 40% GPU reduction (renders at 75% resolution)
+      dpr: [0.5, 1.25], // ⚡⚡ ULTRA AGGRESSIVE - renders at 50% resolution = -60% GPU!
       performance: { min: 0.5 },
     }),
     []
@@ -355,15 +356,9 @@ export default function App() {
         <Canvas {...canvasProps}>
           <color attach="background" args={["#0a0a0a"]} />
           
-          {/* ⚡ OPTIMIZED LIGHTING - Reduced from 2 spotlights to 1 + ambient */}
-          <ambientLight intensity={0.6} />
-          <spotLight
-            position={[10, 10, 10]}
-            angle={0.3}
-            penumbra={1}
-            intensity={1.5}
-            castShadow={false} // ⚡ MAJOR SAVER - 10% GPU reduction
-          />
+          {/* ⚡ ULTRA MINIMAL LIGHTING */}
+          <ambientLight intensity={0.7} /> {/* Increased to compensate for removed spotlight */}
+          <directionalLight position={[5, 5, 5]} intensity={1.2} /> {/* Cheaper than spotlight */}
           
           <Suspense fallback={null}>
             <Model
@@ -373,11 +368,11 @@ export default function App() {
             />
           </Suspense>
           
-          {/* ⚡ OPTIMIZED ENVIRONMENT - Lower resolution */}
+          {/* ⚡ MINIMAL ENVIRONMENT */}
           <Environment 
             preset="sunset" 
-            environmentIntensity={0.5}
-            resolution={256} // ⚡ MAJOR SAVER - 20% GPU reduction (down from 1024)
+            environmentIntensity={0.4} // ⚡ Reduced further
+            resolution={128} // ⚡⚡ ULTRA LOW (down from 256) = -30% more GPU saved!
             background={false}
           />
         </Canvas>

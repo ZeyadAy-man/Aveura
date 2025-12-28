@@ -13,84 +13,10 @@ export const useQualityProvider = () => {
     const timer = setTimeout(() => {
       if (!deviceType || !gpuInfo) return;
 
-      // ⚡⚡⚡ MAXIMUM GPU OPTIMIZATION
-      // - Resolution: 32-128px (down from 384px)
-      // - Samples: All 1-2 (down from 8)
-      // - Reduced distortion & effects slightly
+      // ⚡⚡⚡ ULTRA OPTIMIZED - Maximum GPU efficiency
+      // Strategy: VERY low resolution (32-64px), 1 sample, but keep visual tricks
       const qualityPresets = {
-        1: [ // Ultra Performance - Desktop PCs
-          { 
-            level: 1, name: 'Low', 
-            mainRes: 48, smallRes: 32,
-            mainSamples: 1, smallSamples: 1,
-            transmission: 0.97,
-            thickness: 0.8,
-            ior: 2.25,
-            roughness: 0,
-            chromaticAberration: 0.03,
-            distortion: 0.2,
-            distortionScale: 0.3,
-            envMapIntensity: 2.5,
-            attenuationDistance: 1.2
-          },
-          { 
-            level: 2, name: 'Medium', 
-            mainRes: 64, smallRes: 32,
-            mainSamples: 1, smallSamples: 1,
-            transmission: 0.98,
-            thickness: 0.9,
-            ior: 2.3,
-            roughness: 0,
-            chromaticAberration: 0.04,
-            distortion: 0.25,
-            distortionScale: 0.4,
-            envMapIntensity: 3.0,
-            attenuationDistance: 1.5
-          },
-          { 
-            level: 3, name: 'High', 
-            mainRes: 96, smallRes: 48,
-            mainSamples: 2, smallSamples: 1,
-            transmission: 0.99,
-            thickness: 1.0,
-            ior: 2.35,
-            roughness: 0,
-            chromaticAberration: 0.05,
-            distortion: 0.3,
-            distortionScale: 0.5,
-            envMapIntensity: 3.5,
-            attenuationDistance: 2.0
-          },
-          { 
-            level: 4, name: 'Ultra', 
-            mainRes: 128, smallRes: 64,
-            mainSamples: 2, smallSamples: 1,
-            transmission: 1.0,
-            thickness: 1.2,
-            ior: 2.4,
-            roughness: 0,
-            chromaticAberration: 0.06,
-            distortion: 0.35,
-            distortionScale: 0.6,
-            envMapIntensity: 4.0,
-            attenuationDistance: 2.5
-          },
-          { 
-            level: 5, name: 'Extreme', 
-            mainRes: 128, smallRes: 64,
-            mainSamples: 2, smallSamples: 1,
-            transmission: 1.0,
-            thickness: 1.4,
-            ior: 2.417,
-            roughness: 0,
-            chromaticAberration: 0.07,
-            distortion: 0.4,
-            distortionScale: 0.7,
-            envMapIntensity: 4.5,
-            attenuationDistance: 3.0
-          }
-        ],
-        2: [ // High Performance - Gaming laptops
+        1: [ // Desktop PCs
           { 
             level: 1, name: 'Low', 
             mainRes: 32, smallRes: 32,
@@ -98,7 +24,7 @@ export const useQualityProvider = () => {
             transmission: 0.95,
             thickness: 0.7,
             ior: 2.2,
-            roughness: 0.005,
+            roughness: 0,
             chromaticAberration: 0.025,
             distortion: 0.15,
             distortionScale: 0.25,
@@ -109,7 +35,7 @@ export const useQualityProvider = () => {
             level: 2, name: 'Medium', 
             mainRes: 48, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.97,
+            transmission: 0.96,
             thickness: 0.8,
             ior: 2.25,
             roughness: 0,
@@ -123,7 +49,7 @@ export const useQualityProvider = () => {
             level: 3, name: 'High', 
             mainRes: 64, smallRes: 48,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.98,
+            transmission: 0.97,
             thickness: 0.9,
             ior: 2.3,
             roughness: 0,
@@ -135,9 +61,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 4, name: 'Ultra', 
-            mainRes: 96, smallRes: 48,
+            mainRes: 96, smallRes: 64,
             mainSamples: 2, smallSamples: 1,
-            transmission: 0.99,
+            transmission: 0.98,
             thickness: 1.0,
             ior: 2.35,
             roughness: 0,
@@ -149,7 +75,7 @@ export const useQualityProvider = () => {
           },
           { 
             level: 5, name: 'Extreme', 
-            mainRes: 128, smallRes: 64,
+            mainRes: 96, smallRes: 64,
             mainSamples: 2, smallSamples: 1,
             transmission: 1.0,
             thickness: 1.2,
@@ -162,15 +88,15 @@ export const useQualityProvider = () => {
             attenuationDistance: 2.5
           }
         ],
-        3: [ // Moderate Performance - Laptops, Mini PCs
+        2: [ // Gaming laptops
           { 
             level: 1, name: 'Low', 
             mainRes: 32, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
             transmission: 0.93,
-            thickness: 0.7,
+            thickness: 0.6,
             ior: 2.15,
-            roughness: 0.01,
+            roughness: 0.005,
             chromaticAberration: 0.02,
             distortion: 0.12,
             distortionScale: 0.2,
@@ -179,12 +105,12 @@ export const useQualityProvider = () => {
           },
           { 
             level: 2, name: 'Medium', 
-            mainRes: 48, smallRes: 32,
+            mainRes: 32, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
             transmission: 0.95,
             thickness: 0.7,
             ior: 2.2,
-            roughness: 0.005,
+            roughness: 0,
             chromaticAberration: 0.025,
             distortion: 0.15,
             distortionScale: 0.25,
@@ -193,9 +119,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 3, name: 'High', 
-            mainRes: 64, smallRes: 48,
+            mainRes: 48, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.97,
+            transmission: 0.96,
             thickness: 0.8,
             ior: 2.25,
             roughness: 0,
@@ -207,9 +133,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 4, name: 'Ultra', 
-            mainRes: 96, smallRes: 48,
-            mainSamples: 2, smallSamples: 1,
-            transmission: 0.98,
+            mainRes: 64, smallRes: 48,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.97,
             thickness: 0.9,
             ior: 2.3,
             roughness: 0,
@@ -220,10 +146,10 @@ export const useQualityProvider = () => {
             attenuationDistance: 1.5
           },
           { 
-            level: 5, name: 'Max', 
-            mainRes: 128, smallRes: 64,
+            level: 5, name: 'Extreme', 
+            mainRes: 96, smallRes: 64,
             mainSamples: 2, smallSamples: 1,
-            transmission: 0.99,
+            transmission: 0.98,
             thickness: 1.0,
             ior: 2.35,
             roughness: 0,
@@ -234,7 +160,7 @@ export const useQualityProvider = () => {
             attenuationDistance: 2.0
           }
         ],
-        4: [ // Basic Performance - Office devices
+        3: [ // Laptops, Mini PCs
           { 
             level: 1, name: 'Low', 
             mainRes: 32, smallRes: 32,
@@ -242,7 +168,7 @@ export const useQualityProvider = () => {
             transmission: 0.90,
             thickness: 0.6,
             ior: 2.1,
-            roughness: 0.015,
+            roughness: 0.01,
             chromaticAberration: 0.015,
             distortion: 0.1,
             distortionScale: 0.15,
@@ -254,9 +180,9 @@ export const useQualityProvider = () => {
             mainRes: 32, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
             transmission: 0.93,
-            thickness: 0.7,
+            thickness: 0.6,
             ior: 2.15,
-            roughness: 0.01,
+            roughness: 0.005,
             chromaticAberration: 0.02,
             distortion: 0.12,
             distortionScale: 0.2,
@@ -270,7 +196,7 @@ export const useQualityProvider = () => {
             transmission: 0.95,
             thickness: 0.7,
             ior: 2.2,
-            roughness: 0.005,
+            roughness: 0,
             chromaticAberration: 0.025,
             distortion: 0.15,
             distortionScale: 0.25,
@@ -281,7 +207,7 @@ export const useQualityProvider = () => {
             level: 4, name: 'Ultra', 
             mainRes: 64, smallRes: 48,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.97,
+            transmission: 0.96,
             thickness: 0.8,
             ior: 2.25,
             roughness: 0,
@@ -293,9 +219,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 5, name: 'Max', 
-            mainRes: 96, smallRes: 48,
+            mainRes: 96, smallRes: 64,
             mainSamples: 2, smallSamples: 1,
-            transmission: 0.98,
+            transmission: 0.97,
             thickness: 0.9,
             ior: 2.3,
             roughness: 0,
@@ -306,12 +232,84 @@ export const useQualityProvider = () => {
             attenuationDistance: 1.5
           }
         ],
-        5: [ // Mobile / Fixed - Phones, tablets
+        4: [ // Office devices
           { 
             level: 1, name: 'Low', 
             mainRes: 32, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.88,
+            transmission: 0.85,
+            thickness: 0.5,
+            ior: 2.0,
+            roughness: 0.015,
+            chromaticAberration: 0.01,
+            distortion: 0.08,
+            distortionScale: 0.1,
+            envMapIntensity: 1.2,
+            attenuationDistance: 0.5
+          },
+          { 
+            level: 2, name: 'Medium', 
+            mainRes: 32, smallRes: 32,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.90,
+            thickness: 0.6,
+            ior: 2.1,
+            roughness: 0.01,
+            chromaticAberration: 0.015,
+            distortion: 0.1,
+            distortionScale: 0.15,
+            envMapIntensity: 1.5,
+            attenuationDistance: 0.7
+          },
+          { 
+            level: 3, name: 'High', 
+            mainRes: 32, smallRes: 32,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.93,
+            thickness: 0.6,
+            ior: 2.15,
+            roughness: 0.005,
+            chromaticAberration: 0.02,
+            distortion: 0.12,
+            distortionScale: 0.2,
+            envMapIntensity: 1.8,
+            attenuationDistance: 0.8
+          },
+          { 
+            level: 4, name: 'Ultra', 
+            mainRes: 48, smallRes: 32,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.95,
+            thickness: 0.7,
+            ior: 2.2,
+            roughness: 0,
+            chromaticAberration: 0.025,
+            distortion: 0.15,
+            distortionScale: 0.25,
+            envMapIntensity: 2.0,
+            attenuationDistance: 1.0
+          },
+          { 
+            level: 5, name: 'Max', 
+            mainRes: 64, smallRes: 48,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.96,
+            thickness: 0.8,
+            ior: 2.25,
+            roughness: 0,
+            chromaticAberration: 0.03,
+            distortion: 0.2,
+            distortionScale: 0.3,
+            envMapIntensity: 2.5,
+            attenuationDistance: 1.2
+          }
+        ],
+        5: [ // Mobile
+          { 
+            level: 1, name: 'Low', 
+            mainRes: 32, smallRes: 32,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.85,
             thickness: 0.5,
             ior: 2.0,
             roughness: 0.02,
@@ -323,9 +321,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 2, name: 'Medium', 
-            mainRes: 48, smallRes: 32,
+            mainRes: 32, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.90,
+            transmission: 0.88,
             thickness: 0.6,
             ior: 2.1,
             roughness: 0.015,
@@ -337,9 +335,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 3, name: 'High', 
-            mainRes: 64, smallRes: 48,
+            mainRes: 48, smallRes: 32,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.93,
+            transmission: 0.90,
             thickness: 0.7,
             ior: 2.15,
             roughness: 0.01,
@@ -351,9 +349,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 4, name: 'Ultra', 
-            mainRes: 96, smallRes: 64,
+            mainRes: 64, smallRes: 48,
             mainSamples: 1, smallSamples: 1,
-            transmission: 0.95,
+            transmission: 0.93,
             thickness: 0.8,
             ior: 2.2,
             roughness: 0.005,
@@ -365,9 +363,9 @@ export const useQualityProvider = () => {
           },
           { 
             level: 5, name: 'Max', 
-            mainRes: 128, smallRes: 96,
-            mainSamples: 2, smallSamples: 1,
-            transmission: 0.97,
+            mainRes: 96, smallRes: 64,
+            mainSamples: 1, smallSamples: 1,
+            transmission: 0.95,
             thickness: 0.9,
             ior: 2.25,
             roughness: 0,
@@ -393,7 +391,7 @@ export const useQualityProvider = () => {
         recommendation: selectedQuality
       });
 
-      console.log('🎯 Quality Provider (MAXIMUM GPU Optimization):', {
+      console.log('🎯 Quality Provider (Ultra Optimized):', {
         device: `Tier ${deviceType.tier} - ${deviceType.name}`,
         gpu: `Score ${gpuInfo.score} - ${gpuInfo.type}`,
         quality: selectedQuality.name,

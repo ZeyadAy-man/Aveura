@@ -339,13 +339,17 @@ export default function App() {
 
     // Smart antialiasing logic:
     // Enable if GPU score > 1 (anything better than low)
+    // OR if mobile device with GPU score >= 2
     let antialias = false;
     
     if (gpuScore > 1) {
-      // GPU score 2-5 (Medium, High, Ultra, Extreme)
       antialias = true;
     }
-    // Only GPU score 1 (Low) has antialiasing disabled
+    
+    // Force antialiasing ON for mobile devices at level 2+ to smooth edges
+    if (deviceTier === 5 && gpuScore >= 2) {
+      antialias = true;
+    }
 
     // Smart DPR based on GPU + device
     let dprMin = 0.75; // Increased from 0.5 for better edge quality

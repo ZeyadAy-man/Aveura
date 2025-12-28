@@ -1,12 +1,32 @@
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback, memo } from "react";
 import * as THREE from "three";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import ease from "../Utils/ease";
 import MATERIAL_PRESETS from "../Data/Material";
 import detectGPUTier from "../Utils/GPUDetector";
 import MeshComponent from "./MeshComponent";
-import TransmissionMesh from "./TransmissionMesh";
+
+// TransmissionMesh with forced re-creation on prop changes
+const TransmissionMesh = ({ geometry, transmissionProps, ...props }) => {
+  const meshRef = useRef();
+  
+  // Force material recreation when resolution/samples change
+  const materialKey = `${transmissionProps.resolution}-${transmissionProps.samples}-${transmissionProps.anisotropicBlur}`;
+  
+  useEffect(() => {
+    console.log('🔷 Material updated with resolution:', transmissionProps.resolution, 'samples:', transmissionProps.samples);
+  }, [transmissionProps.resolution, transmissionProps.samples]);
+  
+  return (
+    <mesh ref={meshRef} geometry={geometry} {...props}>
+      <MeshTransmissionMaterial 
+        key={materialKey}
+        {...transmissionProps} 
+      />
+    </mesh>
+  );
+};
 
 export default function Model({ currentSection, sectionProgress, onPartsDetected, onPartSelect, selectedPartId, parts: externalParts, ...props }) {
   const gRef = useRef();
@@ -70,6 +90,13 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
     setGpuTier(tier);
     console.log('GPU Tier detected:', tier);
     
+    // Listen for manual GPU tier changes (for testing)
+    const handleGPUTierChange = (e) => {
+      console.log('🎮 Manually changing GPU tier to:', e.detail);
+      setGpuTier(e.detail);
+    };
+    window.addEventListener('changeGPUTier', handleGPUTierChange);
+    
     const update = () => {
       const w = window.innerWidth;
       const newScale = w < 640 ? { s: 0.5, p: 0.35 } : w < 1024 ? { s: 0.6, p: 0.5 } : { s: 1, p: 1 };
@@ -77,7 +104,10 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
     };
     update();
     window.addEventListener('resize', update, { passive: true });
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('changeGPUTier', handleGPUTierChange);
+    };
   }, []);
 
   const kf = useMemo(() => {
@@ -182,36 +212,103 @@ export default function Model({ currentSection, sectionProgress, onPartsDetected
     return newMaterial;
   }, []);
 
-
-const getTransmissionProps = (part) => {
-    const preset = MATERIAL_PRESETS[part.type][part.currentMaterialType];
+  // Helper function to determine diamond size category
+  const getDiamondSize = (name) => {
+    const lower = name.toLowerCase();
     
+    // Main/large diamonds
+    if (lower.includes('main') || lower.includes('center') || lower.includes('large')) {
+      return 'main';
+    }
+    
+    // Medium diamonds
+    if (lower.includes('medium') || lower.includes('side')) {
+      return 'medium';
+    }
+    
+    // Small/accent diamonds (default for most)
+    if (lower.includes('small') || lower.includes('accent') || lower.includes('tiny')) {
+      return 'small';
+    }
+    
+    // If it has a number > 3, it's probably a small accent diamond
+    const numbers = name.match(/\d+/);
+    if (numbers && parseInt(numbers[0]) > 3) {
+      return 'small';
+    }
+    
+    // Default to small for safety
+    return 'small';
+  };
+
+  const getTransmissionProps = (part) => {
+    const preset = MATERIAL_PRESETS[part.type][part.currentMaterialType];
+    const isDiamond = part.currentMaterialType === 'diamond';
+    
+    // Determine diamond size
+    const diamondSize = isDiamond ? getDiamondSize(part.name) : 'small';
+    
+    // Quality settings with separate main and small diamond configs - EXTREME VALUES FOR TESTING
     const qualitySettings = {
-      high: { samples: 6, resolution: 1024, blur: 0.0 },
-      medium: { samples: 4, resolution: 512, blur: 0.05 },
-      low: { samples: 2, resolution: 256, blur: 0.15 }
+      high: { 
+        mainResolution: 512, 
+        smallResolution: 256,
+        mainSamples: 6, 
+        smallSamples: 4,
+        blur: 0.0,
+        roughness: 0.0,
+        transmission: 1.0
+      },
+      medium: { 
+        mainResolution: 128,  // VERY LOW - should see pixelation
+        smallResolution: 64,   // VERY LOW - should see pixelation
+        mainSamples: 2, 
+        smallSamples: 1,
+        blur: 0.5,  // HIGH blur
+        roughness: 0.1,
+        transmission: 0.9
+      },
+      low: { 
+        mainResolution: 32,   // EXTREMELY LOW - obvious pixelation
+        smallResolution: 32,   // EXTREMELY LOW - obvious pixelation
+        mainSamples: 1, 
+        smallSamples: 1,
+        blur: 0.8,  // VERY HIGH blur
+        roughness: 0.3,
+        transmission: 0.7
+      }
     };
     
     const settings = qualitySettings[gpuTier];
     
-    const isDiamond = part.currentMaterialType === 'diamond';
+    // Select resolution and samples based on diamond size
+    const resolution = diamondSize === 'main' ? settings.mainResolution : settings.smallResolution;
+    const samples = diamondSize === 'main' ? settings.mainSamples : settings.smallSamples;
+    
+    console.log(`💎 ${part.name} (${diamondSize}) - Tier ${gpuTier}:`, {
+      resolution,
+      samples,
+      blur: settings.blur,
+      roughness: settings.roughness,
+      transmission: settings.transmission
+    });
     
     return {
-      transmission: preset.transmission,
+      transmission: settings.transmission,  // CHANGED: Now uses tier-based transmission
       thickness: preset.thickness,
-      roughness: preset.roughness,
+      roughness: settings.roughness,  // CHANGED: Now uses tier-based roughness
       metalness: preset.metalness,
       ior: preset.ior,
       chromaticAberration: isDiamond ? (gpuTier === 'high' ? 0.08 : 0.04) : (gpuTier === 'high' ? 0.02 : 0.01),
-      envMapIntensity: preset.envMapIntensity,
+      envMapIntensity: gpuTier === 'low' ? 1.0 : preset.envMapIntensity,  // CHANGED: Lower on low tier
       clearcoat: preset.clearcoat || (gpuTier === 'low' ? 0 : 0.8),
       clearcoatRoughness: preset.clearcoatRoughness || 0.1,
       attenuationDistance: isDiamond ? 0.01 : 0.2,
       attenuationColor: preset.color,
       color: preset.color,
       reflectivity: preset.reflectivity || 0.5,
-      samples: settings.samples,
-      resolution: settings.resolution,
+      samples: samples,
+      resolution: resolution,
       anisotropicBlur: settings.blur,
       ...(isDiamond && gpuTier === 'high' && { 
         distortion: 0.05,
@@ -237,23 +334,27 @@ const getTransmissionProps = (part) => {
     document.body.style.cursor = 'default';
   };
 
-  const useFallback = gpuTier === 'low' || gpuTier === 'medium';
-
   return (
     <group ref={gRef} {...props} dispose={null}>
       {externalParts.map((part) => {
         const isSelected = selectedPartId === part.id;
         const isHovered = hovered === part.id;
         
-        if (part.type === 'stone' && !useFallback) {
+        console.log('🔍 Processing part:', part.name, 'type:', part.type);
+        
+        // ALWAYS use TransmissionMesh for stones (diamonds)
+        if (part.type === 'stone') {
+          const transmissionProps = getTransmissionProps(part);
+          console.log('💎 STONE DETECTED - Using TransmissionMesh:', part.name, transmissionProps);
           return (
             <group key={part.id}>
               <TransmissionMesh
+                key={`${part.id}-${gpuTier}-${transmissionProps.resolution}`}
                 geometry={part.geometry}
                 position={part.position}
                 rotation={part.rotation}
                 scale={part.scale}
-                transmissionProps={getTransmissionProps(part)}
+                transmissionProps={transmissionProps}
                 onClick={handlePartClick(part)}
                 onPointerOver={handlePartHover(part.id)}
                 onPointerOut={handlePartOut}
@@ -269,6 +370,9 @@ const getTransmissionProps = (part) => {
           );
         }
         
+        console.log('🔧 NON-STONE - Using MeshComponent:', part.name);
+        
+        // For non-stones (metal, pearls), use regular material
         return (
           <group key={part.id}>
             <MeshComponent

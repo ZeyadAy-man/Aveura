@@ -241,9 +241,11 @@ export default function App() {
   const [currentSection, setCurrentSection] = useState(0);
   const [sectionProgress, setSectionProgress] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
   const rafRef = useRef(null);
   const scrollDirectionRef = useRef(0);
   const lastScrollTopRef = useRef(0);
+  const scrollTimeout = useRef(null);
 
   // Memoized sections data with custom directions
   const sections = useMemo(
@@ -305,7 +307,6 @@ export default function App() {
   // Update viewport height on mount and resize
   useEffect(() => {
     const updateHeight = () => {
-      // Use visualViewport if available (better for mobile), otherwise use window.innerHeight
       const height = window.visualViewport?.height || window.innerHeight;
       setViewportHeight(height);
     };
@@ -320,9 +321,16 @@ export default function App() {
     };
   }, []);
 
-  // Optimized scroll handler using RAF with improved state batching
+  // Optimized scroll handler with throttling
   const handleScroll = useCallback(() => {
     if (rafRef.current) return;
+
+    // Set scrolling state
+    setIsScrolling(true);
+    clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
 
     rafRef.current = requestAnimationFrame(() => {
       const scrollTop = window.scrollY || window.pageYOffset;
@@ -330,14 +338,12 @@ export default function App() {
       const section = Math.floor(scrollTop / height);
       const progressInSection = (scrollTop % height) / height;
 
-      // Track scroll direction
       scrollDirectionRef.current =
         scrollTop > lastScrollTopRef.current ? 1 : -1;
       lastScrollTopRef.current = scrollTop;
 
       const newSection = Math.min(Math.max(section, 0), sections.length - 1);
 
-      // Batch state updates using React 18's automatic batching
       setCurrentSection((prev) => (prev !== newSection ? newSection : prev));
       setSectionProgress(progressInSection);
 
@@ -350,7 +356,6 @@ export default function App() {
 
     handleScroll();
 
-    // Passive listener for better scroll performance
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll, { passive: true });
 
@@ -361,36 +366,37 @@ export default function App() {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
     };
   }, [handleScroll, viewportHeight]);
 
-  // Memoized Canvas configuration
+  // OPTIMIZED Canvas configuration
   const canvasProps = useMemo(
     () => ({
       camera: { position: [0, 2, 8], fov: 50 },
       gl: {
-        antialias: true,
+        antialias: false, // ⚡ MAJOR GPU SAVER - disabled antialiasing
         alpha: true,
         powerPreference: "high-performance",
         stencil: false,
         depth: true,
       },
-      dpr: [1, 2],
+      dpr: [0.75, 1.5], // ⚡ MAJOR GPU SAVER - reduced pixel ratio
       performance: { min: 0.5 },
+      frameloop: "always", // Keep always for smooth animation
     }),
     []
   );
 
-  // Calculate total scroll height - add extra buffer for mobile
   const scrollHeight = useMemo(() => {
     const baseHeight = sections.length * 100;
-    // Add 10vh buffer for mobile browsers to ensure last section is reachable
     return `${baseHeight + 10}vh`;
   }, [sections.length]);
 
   return (
     <>
-      {/* Scroll spacer to enable scrolling through all sections with buffer */}
       <div
         style={{
           height: scrollHeight,
@@ -400,7 +406,6 @@ export default function App() {
         }}
       />
 
-      {/* Fixed Canvas */}
       <div
         style={{
           position: "fixed",
@@ -414,43 +419,36 @@ export default function App() {
       >
         <Canvas {...canvasProps}>
           <color attach="background" args={["#0a0a0a"]} />
-          <ambientLight intensity={0.5} />
+          
+          {/* ⚡ OPTIMIZED LIGHTING - Reduced intensity and removed second spotlight */}
+          <ambientLight intensity={0.6} />
           <spotLight
             position={[10, 10, 10]}
             angle={0.3}
             penumbra={1}
-            intensity={2}
-            castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
+            intensity={1.5}
+            castShadow={false} // ⚡ MAJOR GPU SAVER - disabled shadows
           />
-          <spotLight
-            position={[-10, -10, -10]}
-            angle={0.3}
-            penumbra={1}
-            intensity={1}
-            castShadow={false}
-          />
-          <Suspense>
+          
+          <Suspense fallback={null}>
             <Model
               currentSection={currentSection}
               sectionProgress={sectionProgress}
               position={[0, 0, 0]}
             />
           </Suspense>
-          <Environment preset="sunset" environmentIntensity={0.8} />
+          
+          {/* ⚡ OPTIMIZED ENVIRONMENT - Lower resolution and intensity */}
+          <Environment 
+            preset="sunset" 
+            environmentIntensity={0.5}
+            resolution={256} // ⚡ MAJOR GPU SAVER - reduced from default 1024
+            background={false}
+          />
         </Canvas>
       </div>
 
-      {/* Progress Indicator */}
-      {/* <ProgressIndicator 
-        currentSection={currentSection} 
-        sectionProgress={sectionProgress} 
-        totalSections={sections.length}
-      /> */}
       <LuxuryLoader />
-
-      {/* Section Text - all sections are fixed and switch based on currentSection */}
       <SectionDisplay sections={sections} currentSection={currentSection} />
     </>
   );

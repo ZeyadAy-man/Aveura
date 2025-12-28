@@ -337,18 +337,20 @@ export default function App() {
     const gpuScore = gpuInfo.score;
     const deviceTier = deviceType.tier;
 
-    // Smart antialiasing logic:
-    // Enable if GPU score > 1 (anything better than low)
-    // OR if mobile device with GPU score >= 2
+    // Smart antialiasing logic with SAMPLES for mobile
     let antialias = false;
+    let samples = 0; // MSAA samples
     
     if (gpuScore > 1) {
       antialias = true;
     }
     
-    // Force antialiasing ON for mobile devices at level 2+ to smooth edges
-    if (deviceTier === 5 && gpuScore >= 2) {
+    // Force STRONG antialiasing for mobile devices
+    if (deviceTier === 5) {
       antialias = true;
+      if (gpuScore >= 2) {
+        samples = 4; // Force 4x MSAA on mobile
+      }
     }
 
     // Smart DPR based on GPU + device
@@ -365,19 +367,20 @@ export default function App() {
       dprMax = 1.25;
     }
 
-    console.log(`🎨 Canvas Config: AA=${antialias}, DPR=[${dprMin}, ${dprMax}], GPU=${gpuScore}, Device=${deviceTier}, Width=${width}`);
+    console.log(`🎨 Canvas Config: AA=${antialias}, Samples=${samples}, DPR=[${dprMin}, ${dprMax}], GPU=${gpuScore}, Device=${deviceTier}, Width=${width}`);
 
     return {
       camera: { position: [0, 2, 8], fov: 50 },
       gl: {
-        antialias: antialias, // ⚡ Smart antialiasing
+        antialias: antialias,
         alpha: true,
         powerPreference: "high-performance",
         stencil: false,
         depth: true,
         logarithmicDepthBuffer: false,
+        ...(samples > 0 && { samples }), // Add MSAA samples for mobile
       },
-      dpr: [dprMin, dprMax], // ⚡ Smart DPR
+      dpr: [dprMin, dprMax],
       performance: { min: 0.5 },
     };
   }, [deviceType, gpuInfo]);

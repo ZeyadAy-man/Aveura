@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF, MeshTransmissionMaterial } from "@react-three/drei";
 import { useQualityProvider } from "../Utils/QualityProvider";
-
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 const MeshComponent = memo(({ geometry, material, ...props }) => (

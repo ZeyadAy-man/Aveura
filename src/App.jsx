@@ -347,9 +347,16 @@ export default function App() {
     
     // Force STRONG antialiasing for mobile devices
     if (deviceTier === 5) {
-      antialias = true;
-      if (gpuScore >= 2) {
-        samples = 4; // Force 4x MSAA on mobile
+      if (gpuScore >= 3) {
+        antialias = true;
+        samples = 4; // 4x MSAA for high-end mobile
+      } else if (gpuScore === 2) {
+        antialias = true;
+        samples = 4; // 4x MSAA for mid-range
+      } else {
+        // GPU Score 1 - ultra low-end mobile (Infinix Hot 50)
+        antialias = true;
+        samples = 0; // NO MSAA to save GPU
       }
     }
 

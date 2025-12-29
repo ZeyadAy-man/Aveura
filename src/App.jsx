@@ -356,7 +356,7 @@ export default function App() {
       } else {
         // GPU Score 1 - ultra low-end mobile (Infinix Hot 50)
         antialias = true;
-        samples = 0; // NO MSAA to save GPU
+        samples = 2; // ⚡ 2x MSAA instead of 0 for smoother edges
       }
     }
 
